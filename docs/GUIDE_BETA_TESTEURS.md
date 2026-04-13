@@ -26,11 +26,9 @@
 
 ### Se connecter
 
-1. Ouvre l'application dans ton navigateur (lien fourni par l'organisateur).
+1. Ouvre l'application : **https://ligue-fantasy-f1.vercel.app**
 2. Clique sur **Connexion** dans la navbar ou sur le bouton **Commencer** sur la page d'accueil.
-3. Deux options :
-   - **Google** : clique sur "Continuer avec Google" et autorise l'acces.
-   - **Magic Link** : saisis ton email, clique "Recevoir un lien magique", puis clique sur le lien recu par mail.
+3. **Magic Link** : saisis ton email, clique "Recevoir un lien magique", puis clique sur le lien recu par mail.
 4. Tu es redirige vers le **Dashboard** apres connexion.
 
 > Un profil est automatiquement cree a ta premiere connexion. Tu peux modifier ton nom d'utilisateur et ton nom d'affichage dans la page **Profil**.
@@ -278,7 +276,7 @@ Tes feedbacks passes s'affichent sous le formulaire avec un statut :
 Voici les parcours a tester en priorite. Coche chaque etape une fois testee et remonte les anomalies via la page Beta testeur.
 
 ### Parcours 1 : Inscription et profil
-- [ ] Se connecter via Google OU Magic Link
+- [ ] Se connecter via Magic Link sur https://ligue-fantasy-f1.vercel.app
 - [ ] Verifier que le profil est cree automatiquement
 - [ ] Modifier son nom d'utilisateur et nom d'affichage
 - [ ] Verifier les stats sur la page profil
@@ -341,8 +339,8 @@ Voici les parcours a tester en priorite. Coche chaque etape une fois testee et r
 
 | Probleme | Statut | Notes |
 |----------|--------|-------|
-| Les scores ne se mettent pas a jour | Normal | Le calcul se fait automatiquement apres chaque GP reel (cron dimanche 18h30 UTC). Pendant la beta hors course, le classement sera a 0. |
-| Google OAuth ne fonctionne pas | En cours | La configuration Google est en cours. Utilise le **Magic Link** en attendant. |
+| Les scores ne se mettent pas a jour | Normal | Le calcul se fait automatiquement apres chaque GP reel (cron quotidien 19h30 UTC). Pendant la beta hors course, le classement sera a 0. |
+| Google OAuth non disponible | MVP | Pour la beta, seul le **Magic Link** (email) est disponible. Google OAuth sera ajoute dans une version future. |
 | Le chat n'est pas instantane | Connu | Le chat utilise un polling toutes les 5 secondes. Le temps reel (WebSocket) est prevu pour une version future. |
 | Pas de notification push | Prevu | Les notifications (ton tour de draft, roster verrouille) sont prevues pour une version future. |
 

@@ -20,16 +20,18 @@
 - **IDs** : Short codes 6 caractères pour les ligues (en plus des UUID)
 - **Config** : `next.config.mjs` (pas `.ts` — Next 14.2 ne supporte pas `.ts`), `tsx` pour le seed (pas `ts-node` — incompatible Windows)
 - **Environnement** : `.env` requis (voir `.env.example`), Supabase Free Tier
-- **Git** : repo GitHub `Uly-theU/openclaw-workspace` (sous-dossier `Ligue_fantasy_us/`), branche `main`
+- **Git** : repo GitHub `Uly-theU/ligue-fantasy-f1`, branche `main`
+- **Déploiement** : Vercel — https://ligue-fantasy-f1.vercel.app (auto-deploy sur push main)
 - **Docs** : `docs/UI_DESIGN_REFERENCE.md` (référence Figma) + `docs/GUIDE_BETA_TESTEURS.md` (guide beta testeurs)
 
 ### Prochaines étapes (par priorité)
 1. ~~Générer un fichier markdown UI/Design~~ → `docs/UI_DESIGN_REFERENCE.md`
 2. ~~Produire un document d'accompagnement beta testeurs~~ → `docs/GUIDE_BETA_TESTEURS.md`
 3. ~~Initialiser git et faire le premier commit~~ → poussé sur GitHub 2026-04-13
-4. Vérifier le flux complet end-to-end (inscription → ligue → draft → scoring)
-5. Configurer Google OAuth dans Supabase (actuellement Magic Link seul)
-6. Déployer sur Vercel (preview)
+4. ~~Vérifier le flux complet end-to-end~~ → audit E2E complet 2026-04-13 (3 bugs corrigés)
+5. ~~Corriger ingestion OpenF1~~ → mapping pays, crons GET, doublons, fastest lap, qualifs
+6. ~~Déployer sur Vercel~~ → https://ligue-fantasy-f1.vercel.app (beta live)
+7. Configurer Google OAuth dans Supabase (actuellement Magic Link seul)
 
 ---
 
