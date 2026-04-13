@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:openf1.org)",
+      "WebFetch(domain:api.openf1.org)"
+    ]
+  }
+}

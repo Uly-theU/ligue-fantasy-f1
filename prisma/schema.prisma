@@ -1,0 +1,261 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  // Prisma 5.x compatible
+}
+
+model Profile {
+  id              String         @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  username        String         @unique @db.VarChar(30)
+  display_name    String?        @db.VarChar(50)
+  avatar_url      String?
+  created_at      DateTime       @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime       @default(now()) @updatedAt @db.Timestamptz(6)
+  
+  leagues         LeagueMember[]
+  owned_leagues   League[]       @relation("LeagueOwner")
+  fantasy_teams   FantasyTeam[]
+  league_messages LeagueMessage[]
+  activity_logs   ActivityLog[]
+  draft_picks     DraftPick[]
+  beta_feedbacks  BetaFeedback[]
+
+  @@map("profiles")
+}
+
+model League {
+  id            String          @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  name          String          @db.VarChar(100)
+  description   String?
+  short_code    String?         @unique @db.VarChar(6)
+  invite_code   String          @unique @db.VarChar(8)
+  owner_id      String          @db.Uuid
+  season        Int             @default(2026) @db.SmallInt
+  draft_mode    String          @db.VarChar(20)
+  max_players   Int?            @default(10) @db.SmallInt
+  settings      Json            @default(dbgenerated("'{}'::jsonb"))
+  status        String          @default("setup") @db.VarChar(20)
+  created_at    DateTime        @default(now()) @db.Timestamptz(6)
+  updated_at    DateTime        @default(now()) @updatedAt @db.Timestamptz(6)
+
+  owner         Profile         @relation("LeagueOwner", fields: [owner_id], references: [id])
+  members       LeagueMember[]
+  fantasy_teams FantasyTeam[]
+  scoring_rules ScoringRule?
+  league_messages LeagueMessage[]
+  activity_logs ActivityLog[]
+  draft_sessions DraftSession[]
+
+  @@map("leagues")
+}
+
+model LeagueMember {
+  id         String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  league_id  String   @db.Uuid
+  user_id    String   @db.Uuid
+  role       String   @default("member") @db.VarChar(10)
+  joined_at  DateTime @default(now()) @db.Timestamptz(6)
+
+  league     League   @relation(fields: [league_id], references: [id], onDelete: Cascade)
+  profile    Profile  @relation(fields: [user_id], references: [id])
+
+  @@unique([league_id, user_id])
+  @@map("league_members")
+}
+
+model RealEntity {
+  id                String              @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  sport             String              @default("f1") @db.VarChar(20)
+  name              String              @unique @db.VarChar(100)
+  short_name        String?             @db.VarChar(5)
+  base_price        Int
+  metadata          Json                @default(dbgenerated("'{}'::jsonb"))
+  active            Boolean             @default(true)
+  created_at        DateTime            @default(now()) @db.Timestamptz(6)
+  updated_at        DateTime            @default(now()) @updatedAt @db.Timestamptz(6)
+
+  roster_assignments RosterAssignment[]
+  performances      Performance[]
+  draft_picks       DraftPick[]
+
+  @@map("real_entities")
+}
+
+model FantasyTeam {
+  id             String             @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  league_id      String             @db.Uuid
+  user_id        String             @db.Uuid
+  name           String             @db.VarChar(100)
+  current_budget Int?
+  total_points   Decimal            @default(0) @db.Decimal(10, 1)
+  created_at     DateTime           @default(now()) @db.Timestamptz(6)
+  updated_at     DateTime           @default(now()) @updatedAt @db.Timestamptz(6)
+
+  league         League             @relation(fields: [league_id], references: [id], onDelete: Cascade)
+  profile        Profile            @relation(fields: [user_id], references: [id])
+  roster_assignments RosterAssignment[]
+  scores         Score[]
+
+  @@unique([league_id, user_id])
+  @@map("fantasy_teams")
+}
+
+model RosterAssignment {
+  id                String       @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  fantasy_team_id   String       @db.Uuid
+  real_entity_id    String       @db.Uuid
+  is_starter        Boolean      @default(false)
+  is_joker          Boolean      @default(false)
+  acquired_at       DateTime     @default(now()) @db.Timestamptz(6)
+  acquisition_price Int?
+
+  fantasy_team      FantasyTeam  @relation(fields: [fantasy_team_id], references: [id], onDelete: Cascade)
+  real_entity       RealEntity   @relation(fields: [real_entity_id], references: [id])
+
+  @@unique([fantasy_team_id, real_entity_id])
+  @@map("roster_assignments")
+}
+
+model Gameweek {
+  id              String         @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  season          Int            @db.SmallInt
+  round_number    Int            @db.SmallInt
+  name            String         @db.VarChar(100)
+  circuit         String?        @db.VarChar(100)
+  country         String?        @db.VarChar(50)
+  race_date       DateTime       @db.Date
+  qualifying_date DateTime?      @db.Date
+  status          String         @default("upcoming") @db.VarChar(20)
+  lock_time       DateTime?      @db.Timestamptz(6)
+  created_at      DateTime       @default(now()) @db.Timestamptz(6)
+
+  performances    Performance[]
+  scores          Score[]
+
+  @@unique([season, round_number])
+  @@map("gameweeks")
+}
+
+model ScoringRule {
+  id        String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  league_id String   @unique @db.Uuid
+  rules     Json     @default(dbgenerated("'{}'::jsonb"))
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  updated_at DateTime @default(now()) @updatedAt @db.Timestamptz(6)
+
+  league    League   @relation(fields: [league_id], references: [id], onDelete: Cascade)
+
+  @@map("scoring_rules")
+}
+
+model Performance {
+  id             String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  gameweek_id    String   @db.Uuid
+  real_entity_id String   @db.Uuid
+  results        Json     @default(dbgenerated("'{}'::jsonb"))
+  created_at     DateTime @default(now()) @db.Timestamptz(6)
+
+  gameweek       Gameweek   @relation(fields: [gameweek_id], references: [id])
+  real_entity    RealEntity @relation(fields: [real_entity_id], references: [id])
+
+  @@unique([gameweek_id, real_entity_id])
+  @@map("performances")
+}
+
+model Score {
+  id              String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  fantasy_team_id String   @db.Uuid
+  gameweek_id     String   @db.Uuid
+  points_breakdown Json    @default(dbgenerated("'{}'::jsonb"))
+  total_points    Decimal  @default(0) @db.Decimal(10, 1)
+  calculated_at   DateTime @default(now()) @db.Timestamptz(6)
+
+  fantasy_team    FantasyTeam @relation(fields: [fantasy_team_id], references: [id])
+  gameweek        Gameweek    @relation(fields: [gameweek_id], references: [id])
+
+  @@unique([fantasy_team_id, gameweek_id])
+  @@map("scores")
+}
+
+model LeagueMessage {
+  id         String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  league_id  String   @db.Uuid
+  user_id    String   @db.Uuid
+  content    String
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+
+  league     League   @relation(fields: [league_id], references: [id], onDelete: Cascade)
+  profile    Profile  @relation(fields: [user_id], references: [id])
+
+  @@map("league_messages")
+}
+
+model ActivityLog {
+  id              String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  league_id       String   @db.Uuid
+  user_id         String?  @db.Uuid
+  action          String   @db.VarChar(50)
+  target_entity_id String?  @db.Uuid
+  metadata        Json     @default(dbgenerated("'{}'::jsonb"))
+  created_at      DateTime @default(now()) @db.Timestamptz(6)
+
+  league          League   @relation(fields: [league_id], references: [id], onDelete: Cascade)
+  profile         Profile? @relation(fields: [user_id], references: [id])
+
+  @@map("activity_logs")
+}
+
+model DraftSession {
+  id               String       @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  league_id        String       @db.Uuid
+  status           String       @default("pending") @db.VarChar(20)
+  current_turn     Int?         @default(1) @db.SmallInt
+  turn_order       String[]     @default(dbgenerated("'{}'")) @db.Uuid
+  settings         Json         @default(dbgenerated("'{}'::jsonb"))
+  started_at       DateTime?    @db.Timestamptz(6)
+  completed_at     DateTime?    @db.Timestamptz(6)
+  created_at       DateTime     @default(now()) @db.Timestamptz(6)
+
+  league           League       @relation(fields: [league_id], references: [id], onDelete: Cascade)
+  draft_picks      DraftPick[]
+
+  @@map("draft_sessions")
+}
+
+model DraftPick {
+  id              String         @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  draft_session_id String         @db.Uuid
+  user_id         String         @db.Uuid
+  real_entity_id  String         @db.Uuid
+  pick_number     Int            @db.SmallInt
+  round_number    Int            @db.SmallInt
+  picked_at       DateTime       @default(now()) @db.Timestamptz(6)
+
+  draft_session   DraftSession   @relation(fields: [draft_session_id], references: [id])
+  profile         Profile        @relation(fields: [user_id], references: [id])
+  real_entity     RealEntity     @relation(fields: [real_entity_id], references: [id])
+
+  @@map("draft_picks")
+}
+
+model BetaFeedback {
+  id          String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  user_id     String   @db.Uuid
+  category    String   @db.VarChar(30)  // bug, suggestion, ui, autre
+  title       String   @db.VarChar(200)
+  description String
+  page_url    String?  @db.VarChar(500)
+  status      String   @default("new") @db.VarChar(20) // new, read, resolved
+  created_at  DateTime @default(now()) @db.Timestamptz(6)
+
+  profile     Profile  @relation(fields: [user_id], references: [id])
+
+  @@map("beta_feedbacks")
+}
