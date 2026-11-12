@@ -1,0 +1,61 @@
+ACTIVE AUDIO — USER-SUPPLIED ELEVENLABS FILES (21 October 2026)
+Music: /audio/intro/elevenlabs-music-v1.wav
+Original filename: Lights_Out_Grid_2026-10-21T092706.wav
+12.000 seconds, stereo, 48 kHz. Copied unchanged from the file supplied by the user.
+Engine: /audio/intro/elevenlabs-engine-v1.wav
+Original filename: Generate_sound_effec-1792574970772.wav
+10.000 seconds, stereo, 48 kHz. Copied unchanged from the file supplied by the user.
+Rights and usage terms remain those of the supplied files; no new license is assigned here.
+
+Current playback: full music from t=0; engine starts together with the animation
+at t=0, from the beginning of the original file (no source trim). Initial lights-out cue is 5.000s, anchored to
+an energy rise in the music waveform. This is a first editing choice, not a
+verified real-world starting procedure. Timing workshop can change these cues.
+No idle loop or historical Brawn recording is used in current playback.
+The five optional countdown beeps are synthesized original effects.
+
+ARCHIVED EARLIER PROTOTYPE ASSETS / LICENSING
+The following credits refer to earlier prototype files, not the active
+ElevenLabs music/engine supplied by the user.
+
+ENGINE SOURCE
+Brawn-Mercedes BGP 001 (2009)
+Author: Edvvc (Ed Pond)
+Source: https://commons.wikimedia.org/wiki/File:Brawn-Mercedes_BGP_001_(2009).ogg
+License selected: Creative Commons Attribution-ShareAlike 3.0 Unported
+https://creativecommons.org/licenses/by-sa/3.0/
+Recording: pulling away from the start, Goodwood Festival of Speed, 3 July 2010.
+brawn-start.mp3: unchanged Wikimedia MP3 transcode.
+This is a historical F1 recording, not a 2026 engine or a Grand Prix grid start.
+
+ADAPTED SOUNDTRACK: start-grid-mix.wav
+Fantasy F1 project, 2026. Licensed under CC BY-SA 3.0 (same link above).
+Changes: idle loop with crossfades, acceleration excerpt edited to 8.600 seconds,
+volume adjustments, limiting, fade-out and original instrumental music.
+Instrumental: original synthesized E-minor pad, arpeggio, bass and percussion.
+Countdown: five synthesized broadcast-style effects (not an authentic track recording).
+No third-party music or countdown samples used.
+Cues: 0.700, 2.200, 3.700, 5.200, 6.700 seconds; lights-out/engine launch: 8.600 seconds.
+Rebuild: scripts/build-intro-audio.py; shared cues: components/fx/start-timing.json.
+
+CINEMATIC EDITION: start-grid-mix-v3.wav
+Original electronic instrumental: layered detuned harmonic pads, minor-key
+ostinato, percussion, stereo room echoes, picture-cut air effects and final
+resolution. Complete music bus ducks to silence before the 8.600s launch.
+Adapted engine mix and original score/effects: Fantasy F1 project, 2026,
+CC BY-SA 3.0: https://creativecommons.org/licenses/by-sa/3.0/
+Picture cues are generated from the same start-timing.json file as the sound.
+
+INTRO / LANDING VISUALS
+visor-v4.webp, tire-v4.webp, grid-v4.webp: original AI-generated cinematic
+illustrations created with OpenAI ImageGen for Fantasy F1, 2026.
+Fictional driver and single-seater; not documentary footage or a real team.
+Animated still images, with synchronized crop, camera push and light overlays.
+
+TIMING WORKSHOP / LIVE PLAYBACK
+/audio/intro/music.wav: original instrumental stem, before the launch envelope.
+lib/intro-audio.ts schedules the music duck, five original synthetic countdown
+cues, overlapping engine-idle excerpts and launch from brawn-start.mp3.
+Same engine attribution and CC BY-SA 3.0 license as above.
+The source trim, relative motor offset and picture correction are editable
+in /intro-timing. Session previews do not alter the published default cues.

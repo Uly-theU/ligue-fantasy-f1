@@ -52,6 +52,7 @@ model League {
   league_messages LeagueMessage[]
   activity_logs ActivityLog[]
   draft_sessions DraftSession[]
+  draft_picks    DraftPick[]
 
   @@map("leagues")
 }
@@ -78,13 +79,17 @@ model RealEntity {
   base_price        Int
   metadata          Json                @default(dbgenerated("'{}'::jsonb"))
   active            Boolean             @default(true)
+  driver_id         String?             @db.VarChar(80)
   created_at        DateTime            @default(now()) @db.Timestamptz(6)
   updated_at        DateTime            @default(now()) @updatedAt @db.Timestamptz(6)
 
   roster_assignments RosterAssignment[]
   performances      Performance[]
   draft_picks       DraftPick[]
+  lineup_snapshots  LineupSnapshot[]
+  f1_driver         F1Driver?           @relation(fields: [driver_id], references: [id], onDelete: SetNull)
 
+  @@index([driver_id])
   @@map("real_entities")
 }
 
@@ -102,6 +107,7 @@ model FantasyTeam {
   profile        Profile            @relation(fields: [user_id], references: [id])
   roster_assignments RosterAssignment[]
   scores         Score[]
+  lineup_snapshots LineupSnapshot[]
 
   @@unique([league_id, user_id])
   @@map("fantasy_teams")
@@ -130,16 +136,23 @@ model Gameweek {
   name            String         @db.VarChar(100)
   circuit         String?        @db.VarChar(100)
   country         String?        @db.VarChar(50)
-  race_date       DateTime       @db.Date
-  qualifying_date DateTime?      @db.Date
+  race_date       DateTime       @db.Timestamptz(6)
+  qualifying_date DateTime?      @db.Timestamptz(6)
   status          String         @default("upcoming") @db.VarChar(20)
   lock_time       DateTime?      @db.Timestamptz(6)
+  circuit_id      String?        @db.VarChar(80)
+  circuit_layout_id String?      @db.VarChar(80)
   created_at      DateTime       @default(now()) @db.Timestamptz(6)
 
   performances    Performance[]
   scores          Score[]
+  lineup_snapshots LineupSnapshot[]
+  circuit_ref     Circuit?       @relation(fields: [circuit_id], references: [id], onDelete: SetNull)
+  layout          CircuitLayout? @relation(fields: [circuit_layout_id], references: [id], onDelete: SetNull)
 
   @@unique([season, round_number])
+  @@index([circuit_id])
+  @@index([circuit_layout_id])
   @@map("gameweeks")
 }
 
@@ -229,19 +242,40 @@ model DraftSession {
   @@map("draft_sessions")
 }
 
+model LineupSnapshot {
+  id              String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  fantasy_team_id String   @db.Uuid
+  gameweek_id     String   @db.Uuid
+  real_entity_id  String   @db.Uuid
+  is_starter      Boolean  @default(false)
+  is_joker        Boolean  @default(false)
+  frozen_at       DateTime @default(now()) @db.Timestamptz(6)
+
+  fantasy_team    FantasyTeam @relation(fields: [fantasy_team_id], references: [id], onDelete: Cascade)
+  gameweek        Gameweek    @relation(fields: [gameweek_id], references: [id], onDelete: Cascade)
+  real_entity     RealEntity  @relation(fields: [real_entity_id], references: [id])
+
+  @@unique([fantasy_team_id, gameweek_id, real_entity_id])
+  @@map("lineup_snapshots")
+}
+
 model DraftPick {
   id              String         @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
   draft_session_id String         @db.Uuid
+  league_id       String         @db.Uuid
   user_id         String         @db.Uuid
   real_entity_id  String         @db.Uuid
   pick_number     Int            @db.SmallInt
   round_number    Int            @db.SmallInt
   picked_at       DateTime       @default(now()) @db.Timestamptz(6)
 
-  draft_session   DraftSession   @relation(fields: [draft_session_id], references: [id])
+  draft_session   DraftSession   @relation(fields: [draft_session_id], references: [id], onDelete: Cascade)
+  league          League         @relation(fields: [league_id], references: [id], onDelete: Cascade)
   profile         Profile        @relation(fields: [user_id], references: [id])
   real_entity     RealEntity     @relation(fields: [real_entity_id], references: [id])
 
+  @@unique([league_id, real_entity_id])
+  @@unique([draft_session_id, pick_number])
   @@map("draft_picks")
 }
 
@@ -258,4 +292,212 @@ model BetaFeedback {
   profile     Profile  @relation(fields: [user_id], references: [id])
 
   @@map("beta_feedbacks")
+}
+
+// Référentiel F1 (F1DB, CC BY 4.0). Distinct des équipes fantasy.
+
+model Circuit {
+  id             String   @id @db.VarChar(80)
+  name           String   @db.VarChar(120)
+  full_name      String   @db.VarChar(200)
+  previous_names String[] @default([])
+  circuit_type   String   @db.VarChar(20)
+  direction      String   @db.VarChar(20)
+  place_name     String   @db.VarChar(120)
+  country_id     String   @db.VarChar(80)
+  country_name   String   @db.VarChar(80)
+  country_code   String   @db.VarChar(2)
+  latitude       Decimal  @db.Decimal(10, 6)
+  longitude      Decimal  @db.Decimal(10, 6)
+  length_km      Decimal  @db.Decimal(6, 3)
+  turns          Int      @db.SmallInt
+  total_races    Int      @db.SmallInt
+  created_at     DateTime @default(now()) @db.Timestamptz(6)
+  updated_at     DateTime @default(now()) @updatedAt @db.Timestamptz(6)
+
+  layouts        CircuitLayout[]
+  races          RaceRecord[]
+  gameweeks      Gameweek[]
+
+  @@map("circuits")
+}
+
+model CircuitLayout {
+  id         String   @id @db.VarChar(80)
+  circuit_id String   @db.VarChar(80)
+  effective  Boolean  @default(false)
+  length_km  Decimal  @db.Decimal(6, 3)
+  turns      Int      @db.SmallInt
+  svg        String?  @db.Text
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  updated_at DateTime @default(now()) @updatedAt @db.Timestamptz(6)
+
+  circuit    Circuit      @relation(fields: [circuit_id], references: [id], onDelete: Cascade)
+  races      RaceRecord[]
+  gameweeks  Gameweek[]
+
+  @@index([circuit_id])
+  @@map("circuit_layouts")
+}
+
+model F1Driver {
+  id                        String    @id @db.VarChar(80)
+  first_name                String    @db.VarChar(80)
+  last_name                 String    @db.VarChar(120)
+  full_name                 String    @db.VarChar(200)
+  display_name              String    @default("") @db.VarChar(120)
+  abbreviation              String    @db.VarChar(3)
+  permanent_number          String?   @db.VarChar(2)
+  nationality_id            String    @db.VarChar(80)
+  nationality_name          String    @db.VarChar(80)
+  nationality_code          String    @db.VarChar(2)
+  date_of_birth             DateTime? @db.Date
+  total_championship_wins   Int       @default(0)
+  total_race_entries        Int       @default(0)
+  total_race_starts         Int       @default(0)
+  total_race_wins           Int       @default(0)
+  total_race_laps           Int       @default(0)
+  total_podiums             Int       @default(0)
+  total_points              Decimal   @default(0) @db.Decimal(10, 1)
+  total_pole_positions      Int       @default(0)
+  total_fastest_laps        Int       @default(0)
+  total_sprint_starts       Int       @default(0)
+  total_sprint_wins         Int       @default(0)
+  total_driver_of_the_day   Int       @default(0)
+  total_grand_slams         Int       @default(0)
+  best_championship_position Int?
+  best_race_result          Int?
+  best_grid                 Int?
+  current_constructor_id    String?   @db.VarChar(80)
+  created_at                DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at                DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
+
+  current_constructor       F1Constructor?        @relation("DriverCurrentTeam", fields: [current_constructor_id], references: [id], onDelete: SetNull)
+  season_stats              DriverSeasonStat[]
+  entities                  RealEntity[]
+  wins                      RaceRecord[]          @relation("RaceWinner")
+  poles                     RaceRecord[]          @relation("RacePole")
+  fastest_laps              RaceRecord[]          @relation("RaceFastestLap")
+
+  @@index([abbreviation])
+  @@index([current_constructor_id])
+  @@map("f1_drivers")
+}
+
+model F1Constructor {
+  id                        String   @id @db.VarChar(80)
+  name                      String   @db.VarChar(120)
+  full_name                 String   @db.VarChar(200)
+  country_id                String   @db.VarChar(80)
+  country_name              String   @db.VarChar(80)
+  country_code              String   @db.VarChar(2)
+  color                     String?  @db.VarChar(7)
+  active                    Boolean  @default(false)
+  total_championship_wins   Int      @default(0)
+  total_race_entries        Int      @default(0)
+  total_race_starts         Int      @default(0)
+  total_race_wins           Int      @default(0)
+  total_podiums             Int      @default(0)
+  total_points              Decimal  @default(0) @db.Decimal(10, 1)
+  total_pole_positions      Int      @default(0)
+  total_fastest_laps        Int      @default(0)
+  best_championship_position Int?
+  best_race_result          Int?
+  created_at                DateTime @default(now()) @db.Timestamptz(6)
+  updated_at                DateTime @default(now()) @updatedAt @db.Timestamptz(6)
+
+  drivers                   F1Driver[]            @relation("DriverCurrentTeam")
+  season_stats              ConstructorSeasonStat[]
+  driver_seasons            DriverSeasonStat[]
+  wins                      RaceRecord[]          @relation("RaceWinnerConstructor")
+
+  @@map("constructors")
+}
+
+model DriverSeasonStat {
+  driver_id        String   @db.VarChar(80)
+  year             Int      @db.SmallInt
+  constructor_id   String?  @db.VarChar(80)
+  position         Int?     @db.SmallInt
+  position_text    String   @db.VarChar(8)
+  points           Decimal  @default(0) @db.Decimal(10, 1)
+  wins             Int      @default(0) @db.SmallInt
+  podiums          Int      @default(0) @db.SmallInt
+  poles            Int      @default(0) @db.SmallInt
+  fastest_laps     Int      @default(0) @db.SmallInt
+  starts           Int      @default(0) @db.SmallInt
+  entries          Int      @default(0) @db.SmallInt
+  race_laps        Int      @default(0)
+  sprint_starts    Int      @default(0) @db.SmallInt
+  sprint_wins      Int      @default(0) @db.SmallInt
+  driver_of_the_day Int     @default(0) @db.SmallInt
+  best_race_result Int?     @db.SmallInt
+  best_grid        Int?     @db.SmallInt
+
+  driver           F1Driver       @relation(fields: [driver_id], references: [id], onDelete: Cascade)
+  team             F1Constructor? @relation(fields: [constructor_id], references: [id], onDelete: SetNull)
+
+  @@id([driver_id, year])
+  @@index([constructor_id])
+  @@index([year])
+  @@map("driver_season_stats")
+}
+
+model ConstructorSeasonStat {
+  constructor_id   String  @db.VarChar(80)
+  year             Int     @db.SmallInt
+  position         Int?    @db.SmallInt
+  position_text    String  @db.VarChar(8)
+  points           Decimal @default(0) @db.Decimal(10, 1)
+  wins             Int     @default(0) @db.SmallInt
+  podiums          Int     @default(0) @db.SmallInt
+  podium_races     Int     @default(0) @db.SmallInt
+  poles            Int     @default(0) @db.SmallInt
+  fastest_laps     Int     @default(0) @db.SmallInt
+  starts           Int     @default(0) @db.SmallInt
+  entries          Int     @default(0) @db.SmallInt
+  one_twos         Int     @default(0) @db.SmallInt
+  sprint_starts    Int     @default(0) @db.SmallInt
+  sprint_wins      Int     @default(0) @db.SmallInt
+  best_race_result Int?    @db.SmallInt
+  best_grid        Int?    @db.SmallInt
+
+  team             F1Constructor @relation(fields: [constructor_id], references: [id], onDelete: Cascade)
+
+  @@id([constructor_id, year])
+  @@index([year])
+  @@map("constructor_season_stats")
+}
+
+model RaceRecord {
+  id                    Int      @id
+  year                  Int      @db.SmallInt
+  round                 Int      @db.SmallInt
+  official_name         String   @db.VarChar(240)
+  grand_prix_id         String   @db.VarChar(80)
+  date                  DateTime @db.Date
+  circuit_id            String   @db.VarChar(80)
+  circuit_layout_id     String?  @db.VarChar(80)
+  laps                  Int?     @db.SmallInt
+  distance_km           Decimal? @db.Decimal(7, 3)
+  course_length_km      Decimal? @db.Decimal(6, 3)
+  turns                 Int?     @db.SmallInt
+  direction             String?  @db.VarChar(20)
+  winner_driver_id      String?  @db.VarChar(80)
+  winner_constructor_id String?  @db.VarChar(80)
+  pole_driver_id        String?  @db.VarChar(80)
+  fastest_lap_driver_id String?  @db.VarChar(80)
+  fastest_lap_time      String?  @db.VarChar(16)
+
+  circuit               Circuit        @relation(fields: [circuit_id], references: [id])
+  layout                CircuitLayout? @relation(fields: [circuit_layout_id], references: [id], onDelete: SetNull)
+  winner_driver         F1Driver?      @relation("RaceWinner", fields: [winner_driver_id], references: [id], onDelete: SetNull)
+  winner_constructor    F1Constructor? @relation("RaceWinnerConstructor", fields: [winner_constructor_id], references: [id], onDelete: SetNull)
+  pole_driver           F1Driver?      @relation("RacePole", fields: [pole_driver_id], references: [id], onDelete: SetNull)
+  fastest_lap_driver    F1Driver?      @relation("RaceFastestLap", fields: [fastest_lap_driver_id], references: [id], onDelete: SetNull)
+
+  @@unique([year, round])
+  @@index([circuit_id, year])
+  @@index([winner_driver_id])
+  @@map("race_records")
 }

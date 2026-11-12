@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { ISO_TO_COUNTRY_NAME } from '@/lib/country-map';
+import { bearerMatches } from '@/lib/cron-auth';
+import { mapOfficialResult, type OpenF1SessionResult } from '@/lib/openf1-results';
+import { syncGameweekStatuses } from '@/lib/sync-gameweeks';
 
 const OPENF1_BASE = 'https://api.openf1.org/v1';
 
@@ -13,12 +16,6 @@ interface OpenF1Session {
   country_name: string;
   circuit_short_name: string;
   year: number;
-}
-
-interface OpenF1Position {
-  driver_number: number;
-  position: number;
-  date: string;
 }
 
 interface OpenF1Driver {
@@ -91,29 +88,6 @@ function findFastestLapDriver(laps: OpenF1Lap[]): number | null {
   return bestDriver;
 }
 
-/** Met à jour les statuts des gameweeks pour une saison donnée. */
-async function updateGameweekStatuses(season: number) {
-  const now = new Date();
-  const raceBuffer = new Date(now.getTime() - 3 * 60 * 60 * 1000);
-
-  await prisma.gameweek.updateMany({
-    where: { season, status: 'upcoming', lock_time: { lte: now, not: null } },
-    data: { status: 'locked' },
-  });
-  await prisma.gameweek.updateMany({
-    where: { season, status: 'locked', qualifying_date: { lte: now } },
-    data: { status: 'live' },
-  });
-  await prisma.gameweek.updateMany({
-    where: { season, status: 'live', race_date: { lte: raceBuffer } },
-    data: { status: 'completed' },
-  });
-  await prisma.gameweek.updateMany({
-    where: { season, status: 'upcoming', lock_time: null, race_date: { lte: raceBuffer } },
-    data: { status: 'completed' },
-  });
-}
-
 /**
  * Logique d'ingestion d'un GP unique.
  * Retourne un résumé ou null si rien à ingérer.
@@ -137,32 +111,26 @@ async function ingestGameweek(gameweekId: string) {
   const qualifSession = findClosestSession(qualifSessions, gameweek.race_date);
 
   // 2. Récupérer en parallèle les données
-  const [racePositions, openf1Drivers, startingGrid, qualifPositions, laps] = await Promise.all([
-    openf1Fetch<OpenF1Position>(`/position?session_key=${raceSession.session_key}`),
+  const [raceResults, openf1Drivers, startingGrid, qualifResults, laps] = await Promise.all([
+    openf1Fetch<OpenF1SessionResult>(`/session_result?session_key=${raceSession.session_key}`),
     openf1Fetch<OpenF1Driver>(`/drivers?session_key=${raceSession.session_key}`),
     openf1Fetch<OpenF1StartingGrid>(`/starting_grid?session_key=${raceSession.session_key}`),
     qualifSession
-      ? openf1Fetch<OpenF1Position>(`/position?session_key=${qualifSession.session_key}`)
-      : Promise.resolve([] as OpenF1Position[]),
+      ? openf1Fetch<OpenF1SessionResult>(`/session_result?session_key=${qualifSession.session_key}`)
+      : Promise.resolve([] as OpenF1SessionResult[]),
     openf1Fetch<OpenF1Lap>(`/laps?session_key=${raceSession.session_key}`),
   ]);
 
-  // Positions finales de course
-  const finalRacePositions = new Map<number, number>();
-  for (const pos of racePositions) {
-    finalRacePositions.set(pos.driver_number, pos.position);
-  }
+  if (raceResults.length === 0) return null;
 
-  // Grille de départ
   const gridPositions = new Map<number, number>();
   for (const g of startingGrid) {
     gridPositions.set(g.driver_number, g.position);
   }
 
-  // Positions finales de qualification
   const finalQualifPositions = new Map<number, number>();
-  for (const pos of qualifPositions) {
-    finalQualifPositions.set(pos.driver_number, pos.position);
+  for (const pos of qualifResults) {
+    if (pos.position !== null) finalQualifPositions.set(pos.driver_number, pos.position);
   }
 
   const fastestLapDriver = findFastestLapDriver(laps);
@@ -181,7 +149,8 @@ async function ingestGameweek(gameweekId: string) {
 
   let ingested = 0;
 
-  for (const [driverNumber, racePosition] of finalRacePositions) {
+  for (const raceResult of raceResults) {
+    const driverNumber = raceResult.driver_number;
     const acronym = driverNumberToAcronym.get(driverNumber);
     if (!acronym) continue;
 
@@ -189,25 +158,13 @@ async function ingestGameweek(gameweekId: string) {
     if (!entity) continue;
 
     const qualifPos = finalQualifPositions.get(driverNumber) ?? null;
-    const qualifyingSession = qualifPos !== null
-      ? (qualifPos <= 10 ? 'Q3' : qualifPos <= 15 ? 'Q2' : 'Q1')
-      : null;
-
     const gridPos = gridPositions.get(driverNumber) ?? null;
-    const positionsGained = gridPos !== null ? gridPos - racePosition : 0;
-
-    const hasFastestLap = fastestLapDriver === driverNumber;
-
-    const results = {
-      race_position: racePosition,
-      qualifying_session: qualifyingSession,
-      qualifying_position: qualifPos,
-      fastest_lap: hasFastestLap,
-      dotd: false,
-      dnf: null,
-      grid_penalty: 0,
-      positions_gained: positionsGained,
-    };
+    const results = mapOfficialResult({
+      race: raceResult,
+      qualifyingPosition: qualifPos,
+      gridPosition: gridPos,
+      fastestLap: fastestLapDriver === driverNumber,
+    });
 
     await prisma.performance.upsert({
       where: {
@@ -216,8 +173,8 @@ async function ingestGameweek(gameweekId: string) {
           real_entity_id: entity.id,
         },
       },
-      update: { results },
-      create: { gameweek_id: gameweekId, real_entity_id: entity.id, results },
+      update: { results: results as object },
+      create: { gameweek_id: gameweekId, real_entity_id: entity.id, results: results as object },
     });
 
     ingested++;
@@ -235,7 +192,7 @@ async function ingestGameweek(gameweekId: string) {
     openf1_session_key: raceSession.session_key,
     qualif_session_key: qualifSession?.session_key ?? null,
     drivers_ingested: ingested,
-    total_drivers_found: finalRacePositions.size,
+    total_drivers_found: raceResults.length,
   };
 }
 
@@ -248,19 +205,12 @@ async function ingestGameweek(gameweekId: string) {
  * Auto-détecte les GP à ingérer : course passée, pas encore de performances.
  */
 export async function GET(req: NextRequest) {
-  // Auth Vercel Cron : Authorization: Bearer <CRON_SECRET>
-  const authHeader = req.headers.get('authorization');
-  const cronSecret = process.env.CRON_SECRET;
-  if (cronSecret) {
-    const token = authHeader?.replace('Bearer ', '');
-    if (token !== cronSecret) {
-      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
-    }
+  if (!bearerMatches(req.headers.get('authorization'), process.env.CRON_SECRET)) {
+    return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
   }
 
   try {
-    // 1. Mettre à jour les statuts
-    await updateGameweekStatuses(2026);
+    await syncGameweekStatuses(2026);
 
     // 2. Trouver les GP qui ont besoin d'ingestion :
     //    course passée + status completed + pas de performances enregistrées
@@ -305,8 +255,7 @@ export async function GET(req: NextRequest) {
  * Body: { gameweek_id: string }
  */
 export async function POST(req: NextRequest) {
-  const cronSecret = req.headers.get('x-cron-secret');
-  if (process.env.CRON_SECRET && cronSecret !== process.env.CRON_SECRET) {
+  if (!bearerMatches(req.headers.get('authorization'), process.env.CRON_SECRET)) {
     return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
   }
 

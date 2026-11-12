@@ -1,0 +1,40 @@
+# Journal de Sessions — Ligue Fantasy F1
+
+## Sprint
+
+- **Sprint actuel** : `Sprint 1`
+- **Objectif du sprint** : Gate A en local — horloge, alignement figé, secret cron, écriture des résultats
+- **Date début** : `2026-10-06`
+- **Date fin** : ``
+- **Stories prévues** : `005, 001, 002, 003`
+
+## Résumé
+
+| Métrique | Valeur |
+|----------|--------|
+| Sessions totales | 6 |
+| Date première session | 2026-10-06 |
+| Date dernière session | 2026-10-20 |
+
+## Sessions
+
+| # | Date | Story/Workflow | Actions clés | Décisions | Prochaine action |
+|---|------|---------------|-------------|-----------|-----------------|
+| 1 | 2026-10-06 | vgs-story | Diagnostic repris. 14 stories écrites. Board initialisé. | Ordre A → B → C → D validé. Tests uniquement en local. Supabase reste. Le calendrier global n'est pas administrable par un owner de ligue. | Story 005 |
+| 2 | 2026-10-06 | vgs-build | Code des 14 stories. Migration SQL. `vercel.json` retiré. Next 14.2.35. | Qualifs 2026 : Q3 P1–P10, Q2 P11–P16, Q1 P17–P22 (FIA section B). 63 tests verts. | Débloquer le pré-rendu, puis appliquer la migration SQL |
+| 3 | 2026-10-06 | vgs-build | Serveur local. Cause du pré-rendu : module auth async via `serverComponentsExternalPackages`. | Retrait de cette option. `next build` vert, `next start` sert `/login`. UI/QoL reportés. | Vraies clés Supabase dans `.env.local`, puis migration SQL |
+| 4 | 2026-10-20 | vgs-build | Architecture Docker. Postgres dans Compose, auth Supabase conservée. | Les données ligues passent par Prisma. Le profil est créé à la connexion, le trigger `auth.users` ne voit pas la base Docker. DNS inchangé. | Renseigner l'URL et la clé anon, puis `docker compose up -d` |
+| 5 | 2026-10-20 | vgs-build | Portes A et D en parallèle. Healthcheck `/api/health`. | Verrou à l'horloge, gel par équipe, budget conditionnel, UX week-end. 86 tests. Parcours navigateur en attente de Postgres. | Démarrer Postgres et rejouer hub, équipe, dashboard |
+| 6 | 2026-10-20 | vgs-build | Postgres temporaire, seed, parcours navigateur d'un joueur. | Le classement lit le snapshot : 29 pts sur un GP fictif. Deux comptes Supabase et Compose restent à faire. DNS inchangé. | Clés Supabase réelles, puis `docker compose up -d` |
+
+## Consommation par phase
+
+| Phase | Sessions | Tendance |
+|-------|----------|----------|
+| Concept | 0 | → |
+| Design | 0 | → |
+| Planning | 1 | ↑ |
+| Prototype | 0 | → |
+| Alpha | 0 | → |
+| Beta | 0 | → |
+| Ship | 0 | → |

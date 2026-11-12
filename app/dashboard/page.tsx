@@ -10,6 +10,8 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { apiFetch, ApiError } from '@/lib/api';
 import { useToast } from '@/components/ui/toast';
+import { PhotoPlate } from '@/components/ui/photo-plate';
+import { circuitPhoto } from '@/lib/photos';
 
 type League = {
   id: string;
@@ -77,6 +79,15 @@ export default function DashboardPage() {
     }
   }
 
+  async function copyInviteCode(code: string) {
+    try {
+      await navigator.clipboard.writeText(code);
+      toast('Code copié', { variant: 'success' });
+    } catch {
+      toast('Impossible de copier le code', { variant: 'error' });
+    }
+  }
+
   async function handleJoin(e: React.FormEvent) {
     e.preventDefault();
     setJoining(true);
@@ -110,7 +121,7 @@ export default function DashboardPage() {
       <div className="container py-10">
         <div className="space-y-4">
           {[...Array(3)].map((_, i) => (
-            <div key={i} className="h-28 rounded-lg bg-muted animate-pulse" />
+            <div key={i} className="h-28 rounded-3xl border border-white/10 bg-white/5 animate-pulse" />
           ))}
         </div>
       </div>
@@ -124,7 +135,10 @@ export default function DashboardPage() {
           <h1 className="text-3xl font-bold">Mes Ligues</h1>
           <p className="text-muted-foreground">Gère tes ligues Fantasy F1</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" asChild>
+            <Link href="/clm">Contre-la-montre</Link>
+          </Button>
           <Button variant="outline" onClick={() => setShowJoin(!showJoin)}>
             Rejoindre
           </Button>
@@ -150,7 +164,7 @@ export default function DashboardPage() {
                 className="flex-1"
               />
               <select
-                className="flex h-10 rounded-md border border-input bg-background px-3 py-2 text-sm"
+                className="flex h-10 rounded-full border border-white/15 bg-white/5 px-4 py-2 text-sm backdrop-blur-md"
                 value={newMode}
                 onChange={(e) => setNewMode(e.target.value as 'salary_cap' | 'exclusive_draft')}
               >
@@ -205,11 +219,11 @@ export default function DashboardPage() {
         </Card>
       ) : (
         <div className="grid gap-4">
-          {leagues.map((league) => (
+          {leagues.map((league, index) => (
             <Link key={league.id} href={`/league/${league.id}`}>
-              <Card className="hover:bg-accent/50 transition-colors cursor-pointer">
-                <CardContent className="py-5 flex items-center justify-between">
-                  <div className="space-y-1">
+              <PhotoPlate src={circuitPhoto(null, index + 1)} scrim="left" className="min-h-40 transition-colors hover:border-teal/40">
+                <div className="relative flex min-h-40 items-center justify-between gap-4 px-6 py-5">
+                  <div className="space-y-1 rounded-2xl bg-night/40 px-4 py-3 backdrop-blur-md">
                     <div className="flex items-center gap-3">
                       <h3 className="font-semibold text-lg">{league.name}</h3>
                       <Badge variant={statusVariant(league.status)}>
@@ -219,13 +233,28 @@ export default function DashboardPage() {
                         {league.draft_mode === 'salary_cap' ? '💰 Budget' : '🎯 Draft'}
                       </Badge>
                     </div>
-                    <p className="text-sm text-muted-foreground">
-                      Saison {league.season} · ID : <code className="bg-muted px-1 rounded font-bold">{league.short_code}</code> · Code d&apos;invitation : <code className="bg-muted px-1 rounded">{league.invite_code}</code>
+                    <p className="text-sm text-muted-foreground flex flex-wrap items-center gap-x-2 gap-y-1">
+                      <span>
+                        Saison {league.season} · ID : <code className="bg-muted px-1 rounded font-bold">{league.short_code}</code> · Code d&apos;invitation : <code className="bg-muted px-1 rounded">{league.invite_code}</code>
+                      </span>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="h-7 px-2 text-xs"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          void copyInviteCode(league.invite_code);
+                        }}
+                      >
+                        Copier
+                      </Button>
                     </p>
                   </div>
                   <span className="text-muted-foreground">→</span>
-                </CardContent>
-              </Card>
+                </div>
+              </PhotoPlate>
             </Link>
           ))}
         </div>

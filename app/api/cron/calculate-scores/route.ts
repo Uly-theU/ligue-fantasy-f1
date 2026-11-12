@@ -6,6 +6,9 @@ import {
   type ScoringRules,
   type DriverPerformance,
 } from '@/lib/scoring';
+import { bearerMatches } from '@/lib/cron-auth';
+import { scoringLineup } from '@/lib/lineup';
+import { syncGameweekStatuses } from '@/lib/sync-gameweeks';
 
 /**
  * Calcule les scores de toutes les ligues actives pour un GP donné.
@@ -26,13 +29,7 @@ async function calculateScoresForGameweek(gameweekId: string) {
     where: { status: 'active' },
     include: {
       scoring_rules: true,
-      fantasy_teams: {
-        include: {
-          roster_assignments: {
-            include: { real_entity: true },
-          },
-        },
-      },
+      fantasy_teams: true,
     },
   });
 
@@ -44,7 +41,12 @@ async function calculateScoresForGameweek(gameweekId: string) {
       : DEFAULT_SCORING_RULES;
 
     for (const team of league.fantasy_teams) {
-      const rosterWithPerf = team.roster_assignments.map((ra) => ({
+      const snapshots = await prisma.lineupSnapshot.findMany({
+        where: { fantasy_team_id: team.id, gameweek_id: gameweekId },
+        include: { real_entity: true },
+      });
+      const frozen = scoringLineup(snapshots);
+      const rosterWithPerf = frozen.map((ra) => ({
         real_entity_id: ra.real_entity_id,
         short_name: ra.real_entity.short_name ?? ra.real_entity.name.substring(0, 3),
         is_starter: ra.is_starter,
@@ -106,16 +108,12 @@ async function calculateScoresForGameweek(gameweekId: string) {
  * Auto-détecte les GP completed qui ont des performances mais pas encore de scores.
  */
 export async function GET(req: NextRequest) {
-  const authHeader = req.headers.get('authorization');
-  const cronSecret = process.env.CRON_SECRET;
-  if (cronSecret) {
-    const token = authHeader?.replace('Bearer ', '');
-    if (token !== cronSecret) {
-      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
-    }
+  if (!bearerMatches(req.headers.get('authorization'), process.env.CRON_SECRET)) {
+    return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
   }
 
   try {
+    await syncGameweekStatuses(2026);
     // Trouver les GP completed avec des performances mais sans scores calculés
     const candidates = await prisma.gameweek.findMany({
       where: {
@@ -138,7 +136,7 @@ export async function GET(req: NextRequest) {
         where: {
           league: { status: 'active' },
           scores: { none: { gameweek_id: gw.id } },
-          roster_assignments: { some: {} },
+          lineup_snapshots: { some: { gameweek_id: gw.id } },
         },
       });
 
@@ -175,8 +173,7 @@ export async function GET(req: NextRequest) {
  * Body: { gameweek_id: string }
  */
 export async function POST(req: NextRequest) {
-  const cronSecret = req.headers.get('x-cron-secret');
-  if (process.env.CRON_SECRET && cronSecret !== process.env.CRON_SECRET) {
+  if (!bearerMatches(req.headers.get('authorization'), process.env.CRON_SECRET)) {
     return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
   }
 

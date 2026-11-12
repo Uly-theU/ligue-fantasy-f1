@@ -1,0 +1,9 @@
+[Unit]
+Description=Scoring quotidien, après l'ingestion
+
+[Timer]
+OnCalendar=*-*-* 19:30:00 UTC
+Persistent=true
+
+[Install]
+WantedBy=timers.target

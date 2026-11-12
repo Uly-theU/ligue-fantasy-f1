@@ -2,12 +2,16 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getAuthUser } from '@/lib/auth';
 import { createGameweekSchema } from '@/lib/validators';
+import { isPlatformAdmin } from '@/lib/platform-admin';
 import { z } from 'zod';
 
 // POST /api/gameweeks — Créer un GP (admin only / dev)
 export async function POST(req: NextRequest) {
   const { user, errorResponse } = await getAuthUser();
   if (errorResponse) return errorResponse;
+  if (!isPlatformAdmin(user!.id)) {
+    return NextResponse.json({ message: 'Réservé à un admin plateforme' }, { status: 403 });
+  }
 
   try {
     const body = await req.json();

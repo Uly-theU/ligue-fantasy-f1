@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getAuthUser } from '@/lib/auth';
+import { commitDraftPick } from '@/lib/draft-commit';
 import { z } from 'zod';
 
 type Params = { params: { leagueId: string } };
@@ -54,12 +55,6 @@ export async function POST(req: NextRequest, { params }: Params) {
       return NextResponse.json({ message: 'Ce n\'est pas ton tour' }, { status: 403 });
     }
 
-    // Vérifier que le pilote n'est pas déjà drafté
-    const alreadyPicked = session.draft_picks.some((p) => p.real_entity_id === real_entity_id);
-    if (alreadyPicked) {
-      return NextResponse.json({ message: 'Ce pilote a déjà été drafté' }, { status: 409 });
-    }
-
     // Vérifier que le pilote existe et est actif
     const driver = await prisma.realEntity.findUnique({ where: { id: real_entity_id } });
     if (!driver || !driver.active) {
@@ -81,36 +76,66 @@ export async function POST(req: NextRequest, { params }: Params) {
       });
     }
 
-    // Transaction : créer le pick + ajouter au roster + éventuellement compléter le draft
     const isLastPick = currentPickNumber >= totalPicksNeeded;
+    const committed = await commitDraftPick(
+      {
+        transaction: (fn) =>
+          prisma.$transaction((tx) =>
+            fn({
+              driverTakenInLeague: async (leagueId, entityId) => {
+                const row = await tx.draftPick.findFirst({
+                  where: { league_id: leagueId, real_entity_id: entityId },
+                });
+                return Boolean(row);
+              },
+              pickNumberTaken: async (sessionId, pickNumber) => {
+                const row = await tx.draftPick.findFirst({
+                  where: { draft_session_id: sessionId, pick_number: pickNumber },
+                });
+                return Boolean(row);
+              },
+              createPick: async (input) => {
+                await tx.draftPick.create({
+                  data: {
+                    draft_session_id: input.sessionId,
+                    league_id: input.leagueId,
+                    user_id: input.userId,
+                    real_entity_id: input.realEntityId,
+                    pick_number: input.pickNumber,
+                    round_number: input.roundNumber,
+                  },
+                });
+                await tx.rosterAssignment.create({
+                  data: {
+                    fantasy_team_id: team.id,
+                    real_entity_id: input.realEntityId,
+                    is_starter: input.roundNumber <= ((settings.roster_size as number) ?? 5),
+                  },
+                });
+                await tx.draftSession.update({
+                  where: { id: input.sessionId },
+                  data: {
+                    current_turn: input.pickNumber + 1,
+                    ...(isLastPick ? { status: 'completed', completed_at: new Date() } : {}),
+                  },
+                });
+              },
+            }),
+          ),
+      },
+      {
+        leagueId: params.leagueId,
+        sessionId: session.id,
+        userId: user!.id,
+        realEntityId: real_entity_id,
+        pickNumber: currentPickNumber,
+        roundNumber: currentRound,
+      },
+    );
 
-    await prisma.$transaction([
-      prisma.draftPick.create({
-        data: {
-          draft_session_id: session.id,
-          user_id: user!.id,
-          real_entity_id,
-          pick_number: currentPickNumber,
-          round_number: currentRound,
-        },
-      }),
-      prisma.rosterAssignment.create({
-        data: {
-          fantasy_team_id: team.id,
-          real_entity_id,
-          is_starter: currentRound <= ((settings.roster_size as number) ?? 5),
-        },
-      }),
-      prisma.draftSession.update({
-        where: { id: session.id },
-        data: {
-          current_turn: currentPickNumber + 1,
-          ...(isLastPick
-            ? { status: 'completed', completed_at: new Date() }
-            : {}),
-        },
-      }),
-    ]);
+    if (!committed.ok) {
+      return NextResponse.json({ message: committed.message }, { status: committed.status });
+    }
 
     return NextResponse.json({
       message: `${driver.name} drafté par ${user!.email}`,

@@ -5,6 +5,7 @@ import { useParams } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { apiFetch } from '@/lib/api';
+import { CircuitSheetCard, type CircuitSheet } from '@/components/f1/circuit-sheet';
 
 type Performance = {
   id: string;
@@ -38,11 +39,15 @@ type Gameweek = {
 export default function GameweekPage() {
   const { id } = useParams<{ id: string }>();
   const [gw, setGw] = useState<Gameweek | null>(null);
+  const [circuitSheet, setCircuitSheet] = useState<CircuitSheet | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    apiFetch<{ gameweek: Gameweek }>(`/api/gameweeks/${id}`)
-      .then((d) => setGw(d.gameweek))
+    apiFetch<{ gameweek: Gameweek; circuit_sheet: CircuitSheet | null }>(`/api/gameweeks/${id}`)
+      .then((d) => {
+        setGw(d.gameweek);
+        setCircuitSheet(d.circuit_sheet);
+      })
       .finally(() => setLoading(false));
   }, [id]);
 
@@ -79,6 +84,8 @@ export default function GameweekPage() {
           {gw.circuit} · {gw.country} · Round {gw.round_number} · {new Date(gw.race_date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
         </p>
       </div>
+
+      {circuitSheet && <CircuitSheetCard sheet={circuitSheet} />}
 
       {sorted.length === 0 ? (
         <Card>

@@ -210,7 +210,7 @@ export default function LeagueSettingsPage() {
     setDeleting(true);
     try {
       await apiFetch(`/api/leagues/${id}`, { method: 'DELETE' });
-      toast('Ligue supprim��e', { variant: 'success' });
+      toast('Ligue supprimée', { variant: 'success' });
       router.push('/dashboard');
     } catch (e) {
       toast(e instanceof ApiError ? e.message : 'Erreur lors de la suppression', { variant: 'error' });

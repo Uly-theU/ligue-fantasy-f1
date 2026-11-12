@@ -1,69 +1,49 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerSupabaseClient, createAdminSupabaseClient } from '@/lib/supabase-server';
+import { createServerSupabaseClient } from '@/lib/supabase-server';
+import { prisma } from '@/lib/prisma';
+import { currentSessionUser } from '@/lib/auth';
 
 type LeagueLeaveParams = {
   params: {
-    id: string; // League ID
+    id: string;
   };
 };
 
-export async function DELETE(req: NextRequest, { params }: LeagueLeaveParams) {
+export async function DELETE(_req: NextRequest, { params }: LeagueLeaveParams) {
   const supabase = createServerSupabaseClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await currentSessionUser(supabase);
 
   if (!user) {
-    return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+    return NextResponse.json({ message: 'Non autorisé' }, { status: 401 });
   }
 
   const leagueId = params.id;
 
   try {
-    const admin = createAdminSupabaseClient();
-    // Vérifier si l'utilisateur est membre de cette ligue
-    const { data: member, error: memberFetchError } = await admin
-      .from('league_members')
-      .select('id, role')
-      .eq('league_id', leagueId)
-      .eq('user_id', user.id)
-      .single();
-    
-    if (memberFetchError || !member) {
-      return NextResponse.json({ message: 'You are not a member of this league' }, { status: 404 });
+    const member = await prisma.leagueMember.findUnique({
+      where: { league_id_user_id: { league_id: leagueId, user_id: user.id } },
+      select: { id: true, role: true },
+    });
+
+    if (!member) {
+      return NextResponse.json({ message: 'Tu n\'es pas membre de cette ligue' }, { status: 404 });
     }
 
-    // Empêcher le propriétaire de quitter une ligue directement (il devrait d'abord la supprimer ou transférer la propriété)
     if (member.role === 'owner') {
-      return NextResponse.json({ message: 'League owner cannot leave. Transfer ownership or delete the league first.' }, { status: 403 });
+      return NextResponse.json(
+        { message: 'Le propriétaire ne peut pas quitter la ligue. Transfère la propriété ou supprime la ligue.' },
+        { status: 403 },
+      );
     }
 
-    // Supprimer l'utilisateur de league_members
-    const { error: deleteMemberError } = await admin
-      .from('league_members')
-      .delete()
-      .eq('league_id', leagueId)
-      .eq('user_id', user.id);
+    await prisma.$transaction([
+      prisma.fantasyTeam.deleteMany({ where: { league_id: leagueId, user_id: user.id } }),
+      prisma.leagueMember.delete({ where: { id: member.id } }),
+    ]);
 
-    if (deleteMemberError) {
-      console.error('Error leaving league:', deleteMemberError);
-      return NextResponse.json({ message: 'Failed to leave league', error: deleteMemberError.message }, { status: 500 });
-    }
-
-    // Supprimer l'équipe fantasy de l'utilisateur dans cette ligue
-    const { error: deleteTeamError } = await admin
-      .from('fantasy_teams')
-      .delete()
-      .eq('league_id', leagueId)
-      .eq('user_id', user.id);
-
-    if (deleteTeamError) {
-      console.error('Error deleting fantasy team upon leaving league:', deleteTeamError);
-      // Cela ne devrait pas bloquer l'action principale de quitter la ligue, mais est important à logguer.
-    }
-
-    return NextResponse.json({ message: 'Successfully left the league' }, { status: 200 });
-
+    return NextResponse.json({ message: 'Tu as quitté la ligue' }, { status: 200 });
   } catch (error) {
     console.error('Unexpected error:', error);
-    return NextResponse.json({ message: 'Internal server error' }, { status: 500 });
+    return NextResponse.json({ message: 'Erreur interne' }, { status: 500 });
   }
 }

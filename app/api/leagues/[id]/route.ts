@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerSupabaseClient, createAdminSupabaseClient } from '@/lib/supabase-server';
+import { Prisma } from '@prisma/client';
+import { createServerSupabaseClient } from '@/lib/supabase-server';
+import { prisma } from '@/lib/prisma';
+import { currentSessionUser } from '@/lib/auth';
 import { z } from 'zod';
 
 type LeagueParams = {
@@ -17,47 +20,68 @@ const updateLeagueSchema = z.object({
   settings: z.record(z.any()).optional(),
 });
 
-export async function GET(req: NextRequest, { params }: LeagueParams) {
+function toLeagueDetail<T extends {
+  members: Array<{
+    user_id: string;
+    role: string;
+    profile: { username: string; display_name: string | null; avatar_url: string | null };
+  }>;
+}>(league: T) {
+  const { members, ...rest } = league;
+  return {
+    ...rest,
+    league_members: members.map((member) => ({
+      user_id: member.user_id,
+      role: member.role,
+      profiles: member.profile,
+    })),
+  };
+}
+
+export async function GET(_req: NextRequest, { params }: LeagueParams) {
   const supabase = createServerSupabaseClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await currentSessionUser(supabase);
 
   if (!user) {
-    return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+    return NextResponse.json({ message: 'Non autorisé' }, { status: 401 });
   }
 
   const leagueId = params.id;
 
   try {
-    const admin = createAdminSupabaseClient();
-    const { data: league, error } = await admin
-      .from('leagues')
-      .select('*, league_members(user_id, role, profiles(username, display_name, avatar_url)) ')
-      .eq('id', leagueId)
-      .single();
+    const league = await prisma.league.findUnique({
+      where: { id: leagueId },
+      include: {
+        members: {
+          include: {
+            profile: { select: { username: true, display_name: true, avatar_url: true } },
+          },
+        },
+      },
+    });
 
-    if (error) {
-      console.error('Error fetching league detail:', error);
-      return NextResponse.json({ message: 'League not found or access denied', error: error.message }, { status: 404 });
+    if (!league) {
+      return NextResponse.json({ message: 'Ligue introuvable' }, { status: 404 });
     }
 
-    const isMember = league.league_members.some((member: any) => member.user_id === user.id);
+    const isMember = league.members.some((member) => member.user_id === user.id);
     if (!isMember) {
-      return NextResponse.json({ message: 'Access denied to this league' }, { status: 403 });
+      return NextResponse.json({ message: 'Accès refusé à cette ligue' }, { status: 403 });
     }
 
-    return NextResponse.json({ league });
+    return NextResponse.json({ league: toLeagueDetail(league) });
   } catch (error) {
     console.error('Unexpected error:', error);
-    return NextResponse.json({ message: 'Internal server error' }, { status: 500 });
+    return NextResponse.json({ message: 'Erreur interne' }, { status: 500 });
   }
 }
 
 export async function PATCH(req: NextRequest, { params }: LeagueParams) {
   const supabase = createServerSupabaseClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await currentSessionUser(supabase);
 
   if (!user) {
-    return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+    return NextResponse.json({ message: 'Non autorisé' }, { status: 401 });
   }
 
   const leagueId = params.id;
@@ -65,65 +89,60 @@ export async function PATCH(req: NextRequest, { params }: LeagueParams) {
   try {
     const body = await req.json();
     const validatedData = updateLeagueSchema.parse(body);
-    const admin = createAdminSupabaseClient();
 
-    const { data: existingLeague, error: fetchError } = await admin
-      .from('leagues')
-      .select('owner_id')
-      .eq('id', leagueId)
-      .single();
+    const existingLeague = await prisma.league.findUnique({
+      where: { id: leagueId },
+      select: { owner_id: true },
+    });
 
-    if (fetchError || !existingLeague) {
-      return NextResponse.json({ message: 'League not found' }, { status: 404 });
+    if (!existingLeague) {
+      return NextResponse.json({ message: 'Ligue introuvable' }, { status: 404 });
     }
 
     if (existingLeague.owner_id !== user.id) {
-      return NextResponse.json({ message: 'Forbidden: Only league owner can update' }, { status: 403 });
+      return NextResponse.json({ message: 'Seul le propriétaire peut modifier la ligue' }, { status: 403 });
     }
 
-    const { data: updatedLeague, error: updateError } = await admin
-      .from('leagues')
-      .update({ ...validatedData, updated_at: new Date().toISOString() })
-      .eq('id', leagueId)
-      .select()
-      .single();
+    const data: Prisma.LeagueUpdateInput = {};
+    if (validatedData.name !== undefined) data.name = validatedData.name;
+    if (validatedData.description !== undefined) data.description = validatedData.description;
+    if (validatedData.draft_mode !== undefined) data.draft_mode = validatedData.draft_mode;
+    if (validatedData.max_players !== undefined) data.max_players = validatedData.max_players;
+    if (validatedData.status !== undefined) data.status = validatedData.status;
+    if (validatedData.settings !== undefined) data.settings = validatedData.settings as Prisma.InputJsonValue;
 
-    if (updateError) {
-      console.error('Error updating league:', updateError);
-      return NextResponse.json({ message: 'Failed to update league', error: updateError.message }, { status: 500 });
-    }
+    const updatedLeague = await prisma.league.update({
+      where: { id: leagueId },
+      data,
+    });
 
-    return NextResponse.json({ message: 'League updated successfully', league: updatedLeague });
-
+    return NextResponse.json({ message: 'Ligue mise à jour', league: updatedLeague });
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ message: 'Invalid request data', errors: error.errors }, { status: 400 });
+      return NextResponse.json({ message: 'Données invalides', errors: error.errors }, { status: 400 });
     }
     console.error('Unexpected error:', error);
-    return NextResponse.json({ message: 'Internal server error' }, { status: 500 });
+    return NextResponse.json({ message: 'Erreur interne' }, { status: 500 });
   }
 }
 
-export async function DELETE(req: NextRequest, { params }: LeagueParams) {
+export async function DELETE(_req: NextRequest, { params }: LeagueParams) {
   const supabase = createServerSupabaseClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await currentSessionUser(supabase);
 
   if (!user) {
-    return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+    return NextResponse.json({ message: 'Non autorisé' }, { status: 401 });
   }
 
   const leagueId = params.id;
 
   try {
-    const admin = createAdminSupabaseClient();
+    const league = await prisma.league.findUnique({
+      where: { id: leagueId },
+      select: { owner_id: true, status: true },
+    });
 
-    const { data: league, error: fetchError } = await admin
-      .from('leagues')
-      .select('owner_id, status')
-      .eq('id', leagueId)
-      .single();
-
-    if (fetchError || !league) {
+    if (!league) {
       return NextResponse.json({ message: 'Ligue introuvable' }, { status: 404 });
     }
 
@@ -135,19 +154,11 @@ export async function DELETE(req: NextRequest, { params }: LeagueParams) {
       return NextResponse.json({ message: 'Impossible de supprimer une ligue active ou terminée' }, { status: 400 });
     }
 
-    const { error: deleteError } = await admin
-      .from('leagues')
-      .delete()
-      .eq('id', leagueId);
-
-    if (deleteError) {
-      console.error('Error deleting league:', deleteError);
-      return NextResponse.json({ message: 'Erreur lors de la suppression', error: deleteError.message }, { status: 500 });
-    }
+    await prisma.league.delete({ where: { id: leagueId } });
 
     return NextResponse.json({ message: 'Ligue supprimée' });
   } catch (error) {
     console.error('Unexpected error:', error);
-    return NextResponse.json({ message: 'Internal server error' }, { status: 500 });
+    return NextResponse.json({ message: 'Erreur interne' }, { status: 500 });
   }
 }

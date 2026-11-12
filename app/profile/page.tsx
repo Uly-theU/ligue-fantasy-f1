@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useAuth } from '@/components/providers';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -9,6 +9,15 @@ import { Badge } from '@/components/ui/badge';
 import { apiFetch, ApiError } from '@/lib/api';
 import { useToast } from '@/components/ui/toast';
 import Link from 'next/link';
+
+/** Même règle que `usernameLooksGenerated` dans lib/ensure-profile.ts (évite d'importer Prisma ici). */
+function usernameLooksGenerated(username: string, userId: string): boolean {
+  const suffix = userId.replace(/-/g, '').slice(0, 8);
+  if (!/^[0-9a-fA-F]{8}$/.test(suffix)) return false;
+  if (!username.endsWith(suffix)) return false;
+  const prefix = username.slice(0, -suffix.length);
+  return prefix.length >= 1 && prefix.length <= 20 && /^[a-z0-9]+$/.test(prefix);
+}
 
 type Profile = {
   id: string;
@@ -37,6 +46,7 @@ export default function ProfilePage() {
   const [displayName, setDisplayName] = useState('');
   const [saving, setSaving] = useState(false);
   const { toast } = useToast();
+  const generatedFormOpened = useRef(false);
 
   useEffect(() => {
     fetchProfile();
@@ -48,6 +58,12 @@ export default function ProfilePage() {
       setProfile(data.profile);
       setUsername(data.profile.username);
       setDisplayName(data.profile.display_name ?? '');
+      if (!generatedFormOpened.current) {
+        generatedFormOpened.current = true;
+        if (usernameLooksGenerated(data.profile.username, data.profile.id)) {
+          setEditing(true);
+        }
+      }
     } catch (e) {
       toast(e instanceof ApiError ? e.message : 'Impossible de charger le profil', { variant: 'error' });
     } finally {
@@ -85,12 +101,18 @@ export default function ProfilePage() {
   // Trier les équipes par points décroissants
   const sortedTeams = [...profile.fantasy_teams].sort((a, b) => Number(b.total_points) - Number(a.total_points));
   const totalPoints = sortedTeams.reduce((sum, t) => sum + Number(t.total_points), 0);
+  const generatedUsername = usernameLooksGenerated(profile.username, profile.id);
 
   return (
     <div className="container py-10 space-y-6 max-w-2xl">
       {/* Profil */}
       <Card>
         <CardHeader>
+          {generatedUsername && (
+            <p className="text-sm text-muted-foreground">
+              Choisis un pseudo. Celui-ci a été fabriqué depuis ton e-mail.
+            </p>
+          )}
           <div className="flex items-center gap-4">
             <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center text-2xl font-bold">
               {(profile.display_name ?? profile.username)?.[0]?.toUpperCase() ?? '?'}

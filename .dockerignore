@@ -1,0 +1,15 @@
+node_modules
+.next
+.git
+.env
+.env.*
+!.env.example
+npm-debug.log*
+*.log
+coverage
+tsconfig.tsbuildinfo
+production
+design
+docs
+deploy
+.github

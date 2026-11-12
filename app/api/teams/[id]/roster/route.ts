@@ -2,9 +2,23 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getAuthUser } from '@/lib/auth';
 import { addToRosterSchema, updateRosterSchema } from '@/lib/validators';
+import { ROSTER_FROZEN_MESSAGE } from '@/lib/lineup';
+import { freezeRosterIfClockBlocked } from '@/lib/freeze-lineups';
 import { z } from 'zod';
 
 type Params = { params: { id: string } }; // id = league_id
+
+class BudgetInsuffisantError extends Error {
+  constructor() {
+    super('Budget insuffisant');
+    this.name = 'BudgetInsuffisantError';
+  }
+}
+
+async function rosterLocked(season: number) {
+  if (!(await freezeRosterIfClockBlocked(season))) return null;
+  return NextResponse.json({ message: ROSTER_FROZEN_MESSAGE }, { status: 403 });
+}
 
 // POST /api/teams/[leagueId]/roster — Ajouter un pilote au roster
 export async function POST(req: NextRequest, { params }: Params) {
@@ -33,6 +47,9 @@ export async function POST(req: NextRequest, { params }: Params) {
       return NextResponse.json({ message: 'La ligue est terminée' }, { status: 403 });
     }
 
+    const locked = await rosterLocked(team.league.season);
+    if (locked) return locked;
+
     // Vérifier taille du roster (défaut: 7 = 5 titulaires + 2 remplaçants)
     const settings = team.league.settings as Record<string, unknown>;
     const maxRoster = ((settings?.roster_size as number) ?? 5) + ((settings?.bench_size as number) ?? 2);
@@ -51,12 +68,10 @@ export async function POST(req: NextRequest, { params }: Params) {
       return NextResponse.json({ message: 'Pilote introuvable ou inactif' }, { status: 404 });
     }
 
-    let newBudget = team.current_budget;
     if (team.league.draft_mode === 'salary_cap') {
       if (team.current_budget === null || team.current_budget < driver.base_price) {
         return NextResponse.json({ message: 'Budget insuffisant' }, { status: 400 });
       }
-      newBudget = team.current_budget - driver.base_price;
     }
 
     // En mode exclusive_draft : vérifier que le pilote n'est pas déjà pris par un autre joueur de la ligue
@@ -72,9 +87,20 @@ export async function POST(req: NextRequest, { params }: Params) {
       }
     }
 
-    // Ajouter au roster + mettre à jour le budget
-    const [assignment] = await prisma.$transaction([
-      prisma.rosterAssignment.create({
+    const { assignment, remaining_budget } = await prisma.$transaction(async (tx) => {
+      let remainingBudget = team.current_budget;
+
+      if (team.league.draft_mode === 'salary_cap') {
+        const fresh = await tx.fantasyTeam.findUnique({
+          where: { id: team.id },
+          select: { current_budget: true },
+        });
+        if (fresh?.current_budget == null || fresh.current_budget < driver.base_price) {
+          throw new BudgetInsuffisantError();
+        }
+      }
+
+      const created = await tx.rosterAssignment.create({
         data: {
           fantasy_team_id: team.id,
           real_entity_id,
@@ -82,14 +108,34 @@ export async function POST(req: NextRequest, { params }: Params) {
           acquisition_price: driver.base_price,
         },
         include: { real_entity: true },
-      }),
-      ...(newBudget !== team.current_budget
-        ? [prisma.fantasyTeam.update({ where: { id: team.id }, data: { current_budget: newBudget } })]
-        : []),
-    ]);
+      });
 
-    return NextResponse.json({ message: 'Pilote ajouté', assignment, remaining_budget: newBudget }, { status: 201 });
+      if (team.league.draft_mode === 'salary_cap') {
+        const debited = await tx.fantasyTeam.updateMany({
+          where: {
+            id: team.id,
+            current_budget: { gte: driver.base_price },
+          },
+          data: { current_budget: { decrement: driver.base_price } },
+        });
+        if (debited.count !== 1) {
+          throw new BudgetInsuffisantError();
+        }
+        const after = await tx.fantasyTeam.findUnique({
+          where: { id: team.id },
+          select: { current_budget: true },
+        });
+        remainingBudget = after?.current_budget ?? null;
+      }
+
+      return { assignment: created, remaining_budget: remainingBudget };
+    });
+
+    return NextResponse.json({ message: 'Pilote ajouté', assignment, remaining_budget }, { status: 201 });
   } catch (error) {
+    if (error instanceof BudgetInsuffisantError) {
+      return NextResponse.json({ message: 'Budget insuffisant' }, { status: 400 });
+    }
     if (error instanceof z.ZodError) {
       return NextResponse.json({ message: 'Données invalides', errors: error.errors }, { status: 400 });
     }
@@ -115,6 +161,9 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     if (!team) {
       return NextResponse.json({ message: 'Équipe non trouvée' }, { status: 404 });
     }
+
+    const locked = await rosterLocked(team.league.season);
+    if (locked) return locked;
 
     // Vérifier que les starters sont bien dans le roster
     const rosterEntityIds = team.roster_assignments.map((r) => r.real_entity_id);
