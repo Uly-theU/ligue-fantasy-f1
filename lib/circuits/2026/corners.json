@@ -1,0 +1,1695 @@
+{
+ "sources": {
+  "multiviewer": "MultiViewer (numérotation FOM) — https://api.multiviewer.app",
+  "geometry": "Pas de fiche MultiViewer : virages les plus marqués du tracé F1DB, au nombre officiel, numérotés depuis la ligne"
+ },
+ "note": "at = fraction du tour depuis la ligne de départ dans le sens de la course, même repère que elevation.json",
+ "circuits": {
+  "melbourne": {
+   "source": "multiviewer",
+   "circuit_key": 10,
+   "year": 2022,
+   "fit": 0.0002,
+   "corners": [
+    {
+     "number": 1,
+     "at": 0.0647
+    },
+    {
+     "number": 2,
+     "at": 0.0806
+    },
+    {
+     "number": 3,
+     "at": 0.2025
+    },
+    {
+     "number": 4,
+     "at": 0.2323
+    },
+    {
+     "number": 5,
+     "at": 0.27
+    },
+    {
+     "number": 6,
+     "at": 0.3512
+    },
+    {
+     "number": 7,
+     "at": 0.373
+    },
+    {
+     "number": 8,
+     "at": 0.4121
+    },
+    {
+     "number": 9,
+     "at": 0.6244
+    },
+    {
+     "number": 10,
+     "at": 0.6459
+    },
+    {
+     "number": 11,
+     "at": 0.778
+    },
+    {
+     "number": 12,
+     "at": 0.8286
+    },
+    {
+     "number": 13,
+     "at": 0.8753
+    },
+    {
+     "number": 14,
+     "at": 0.9066
+    }
+   ]
+  },
+  "shanghai": {
+   "source": "multiviewer",
+   "circuit_key": 49,
+   "year": 2019,
+   "fit": 0.0022,
+   "corners": [
+    {
+     "number": 1,
+     "at": 0.0366
+    },
+    {
+     "number": 2,
+     "at": 0.0701
+    },
+    {
+     "number": 3,
+     "at": 0.1009
+    },
+    {
+     "number": 4,
+     "at": 0.1218
+    },
+    {
+     "number": 5,
+     "at": 0.1782
+    },
+    {
+     "number": 6,
+     "at": 0.224
+    },
+    {
+     "number": 7,
+     "at": 0.3079
+    },
+    {
+     "number": 8,
+     "at": 0.3631
+    },
+    {
+     "number": 9,
+     "at": 0.3997
+    },
+    {
+     "number": 10,
+     "at": 0.4171
+    },
+    {
+     "number": 11,
+     "at": 0.4982
+    },
+    {
+     "number": 12,
+     "at": 0.5219
+    },
+    {
+     "number": 13,
+     "at": 0.5573
+    },
+    {
+     "number": 14,
+     "at": 0.8105
+    },
+    {
+     "number": 15,
+     "at": 0.8235
+    },
+    {
+     "number": 16,
+     "at": 0.8777
+    }
+   ]
+  },
+  "suzuka": {
+   "source": "multiviewer",
+   "circuit_key": 46,
+   "year": 2025,
+   "fit": 0.0003,
+   "corners": [
+    {
+     "number": 1,
+     "at": 0.0838
+    },
+    {
+     "number": 2,
+     "at": 0.1043
+    },
+    {
+     "number": 3,
+     "at": 0.1473
+    },
+    {
+     "number": 4,
+     "at": 0.1702
+    },
+    {
+     "number": 5,
+     "at": 0.1968
+    },
+    {
+     "number": 6,
+     "at": 0.2256
+    },
+    {
+     "number": 7,
+     "at": 0.282
+    },
+    {
+     "number": 8,
+     "at": 0.3533
+    },
+    {
+     "number": 9,
+     "at": 0.3807
+    },
+    {
+     "number": 10,
+     "at": 0.4353
+    },
+    {
+     "number": 11,
+     "at": 0.4633
+    },
+    {
+     "number": 12,
+     "at": 0.5077
+    },
+    {
+     "number": 13,
+     "at": 0.617
+    },
+    {
+     "number": 14,
+     "at": 0.6439
+    },
+    {
+     "number": 15,
+     "at": 0.8223
+    },
+    {
+     "number": 16,
+     "at": 0.8915
+    },
+    {
+     "number": 17,
+     "at": 0.9027
+    },
+    {
+     "number": 18,
+     "at": 0.9332
+    }
+   ]
+  },
+  "miami": {
+   "source": "multiviewer",
+   "circuit_key": 151,
+   "year": 2022,
+   "fit": 0.0018,
+   "corners": [
+    {
+     "number": 1,
+     "at": 0.0474
+    },
+    {
+     "number": 2,
+     "at": 0.0685
+    },
+    {
+     "number": 3,
+     "at": 0.0851
+    },
+    {
+     "number": 4,
+     "at": 0.1861
+    },
+    {
+     "number": 5,
+     "at": 0.2111
+    },
+    {
+     "number": 6,
+     "at": 0.2372
+    },
+    {
+     "number": 7,
+     "at": 0.2694
+    },
+    {
+     "number": 8,
+     "at": 0.2854
+    },
+    {
+     "number": 9,
+     "at": 0.383
+    },
+    {
+     "number": 10,
+     "at": 0.4368
+    },
+    {
+     "number": 11,
+     "at": 0.558
+    },
+    {
+     "number": 12,
+     "at": 0.5779
+    },
+    {
+     "number": 13,
+     "at": 0.6012
+    },
+    {
+     "number": 14,
+     "at": 0.619
+    },
+    {
+     "number": 15,
+     "at": 0.622
+    },
+    {
+     "number": 16,
+     "at": 0.6388
+    },
+    {
+     "number": 17,
+     "at": 0.8809
+    },
+    {
+     "number": 18,
+     "at": 0.9118
+    },
+    {
+     "number": 19,
+     "at": 0.9511
+    }
+   ]
+  },
+  "montreal": {
+   "source": "multiviewer",
+   "circuit_key": 23,
+   "year": 2022,
+   "fit": 0.0002,
+   "corners": [
+    {
+     "number": 1,
+     "at": 0.0991
+    },
+    {
+     "number": 2,
+     "at": 0.1246
+    },
+    {
+     "number": 3,
+     "at": 0.2119
+    },
+    {
+     "number": 4,
+     "at": 0.2256
+    },
+    {
+     "number": 5,
+     "at": 0.2777
+    },
+    {
+     "number": 6,
+     "at": 0.3292
+    },
+    {
+     "number": 7,
+     "at": 0.3513
+    },
+    {
+     "number": 8,
+     "at": 0.5079
+    },
+    {
+     "number": 9,
+     "at": 0.5276
+    },
+    {
+     "number": 10,
+     "at": 0.6643
+    },
+    {
+     "number": 11,
+     "at": 0.6894
+    },
+    {
+     "number": 12,
+     "at": 0.7741
+    },
+    {
+     "number": 13,
+     "at": 0.9392
+    },
+    {
+     "number": 14,
+     "at": 0.9475
+    }
+   ]
+  },
+  "monaco": {
+   "source": "multiviewer",
+   "circuit_key": 22,
+   "year": 2022,
+   "fit": 0.0004,
+   "corners": [
+    {
+     "number": 1,
+     "at": 0.0593
+    },
+    {
+     "number": 2,
+     "at": 0.1792
+    },
+    {
+     "number": 3,
+     "at": 0.2296
+    },
+    {
+     "number": 4,
+     "at": 0.2688
+    },
+    {
+     "number": 5,
+     "at": 0.3352
+    },
+    {
+     "number": 6,
+     "at": 0.3728
+    },
+    {
+     "number": 7,
+     "at": 0.4019
+    },
+    {
+     "number": 8,
+     "at": 0.4247
+    },
+    {
+     "number": 9,
+     "at": 0.525
+    },
+    {
+     "number": 10,
+     "at": 0.6224
+    },
+    {
+     "number": 11,
+     "at": 0.6397
+    },
+    {
+     "number": 12,
+     "at": 0.7098
+    },
+    {
+     "number": 13,
+     "at": 0.7552
+    },
+    {
+     "number": 14,
+     "at": 0.7651
+    },
+    {
+     "number": 15,
+     "at": 0.808
+    },
+    {
+     "number": 16,
+     "at": 0.8161
+    },
+    {
+     "number": 17,
+     "at": 0.8378
+    },
+    {
+     "number": 18,
+     "at": 0.8757
+    },
+    {
+     "number": 19,
+     "at": 0.9006
+    }
+   ]
+  },
+  "catalunya": {
+   "source": "multiviewer",
+   "circuit_key": 15,
+   "year": 2023,
+   "fit": 0.0001,
+   "corners": [
+    {
+     "number": 1,
+     "at": 0.1553
+    },
+    {
+     "number": 2,
+     "at": 0.1738
+    },
+    {
+     "number": 3,
+     "at": 0.2294
+    },
+    {
+     "number": 4,
+     "at": 0.3524
+    },
+    {
+     "number": 5,
+     "at": 0.4466
+    },
+    {
+     "number": 6,
+     "at": 0.4862
+    },
+    {
+     "number": 7,
+     "at": 0.523
+    },
+    {
+     "number": 8,
+     "at": 0.5434
+    },
+    {
+     "number": 9,
+     "at": 0.6013
+    },
+    {
+     "number": 10,
+     "at": 0.7294
+    },
+    {
+     "number": 11,
+     "at": 0.7617
+    },
+    {
+     "number": 12,
+     "at": 0.7853
+    },
+    {
+     "number": 13,
+     "at": 0.8459
+    },
+    {
+     "number": 14,
+     "at": 0.9128
+    }
+   ]
+  },
+  "spielberg": {
+   "source": "multiviewer",
+   "circuit_key": 19,
+   "year": 2022,
+   "fit": 0.0016,
+   "corners": [
+    {
+     "number": 1,
+     "at": 0.0756
+    },
+    {
+     "number": 2,
+     "at": 0.2249
+    },
+    {
+     "number": 3,
+     "at": 0.2967
+    },
+    {
+     "number": 4,
+     "at": 0.4881
+    },
+    {
+     "number": 5,
+     "at": 0.5339
+    },
+    {
+     "number": 6,
+     "at": 0.6054
+    },
+    {
+     "number": 7,
+     "at": 0.6755
+    },
+    {
+     "number": 8,
+     "at": 0.7237
+    },
+    {
+     "number": 9,
+     "at": 0.8515
+    },
+    {
+     "number": 10,
+     "at": 0.8942
+    }
+   ]
+  },
+  "silverstone": {
+   "source": "multiviewer",
+   "circuit_key": 2,
+   "year": 2022,
+   "fit": 0.0002,
+   "corners": [
+    {
+     "number": 1,
+     "at": 0.0778
+    },
+    {
+     "number": 2,
+     "at": 0.1049
+    },
+    {
+     "number": 3,
+     "at": 0.1482
+    },
+    {
+     "number": 4,
+     "at": 0.1788
+    },
+    {
+     "number": 5,
+     "at": 0.2117
+    },
+    {
+     "number": 6,
+     "at": 0.3366
+    },
+    {
+     "number": 7,
+     "at": 0.3741
+    },
+    {
+     "number": 8,
+     "at": 0.4329
+    },
+    {
+     "number": 9,
+     "at": 0.522
+    },
+    {
+     "number": 10,
+     "at": 0.6164
+    },
+    {
+     "number": 11,
+     "at": 0.6331
+    },
+    {
+     "number": 12,
+     "at": 0.6581
+    },
+    {
+     "number": 13,
+     "at": 0.6833
+    },
+    {
+     "number": 14,
+     "at": 0.7087
+    },
+    {
+     "number": 15,
+     "at": 0.8535
+    },
+    {
+     "number": 16,
+     "at": 0.9306
+    },
+    {
+     "number": 17,
+     "at": 0.9474
+    },
+    {
+     "number": 18,
+     "at": 0.9737
+    }
+   ]
+  },
+  "spa-francorchamps": {
+   "source": "multiviewer",
+   "circuit_key": 7,
+   "year": 2021,
+   "fit": 0.0002,
+   "corners": [
+    {
+     "number": 1,
+     "at": 0.0362
+    },
+    {
+     "number": 2,
+     "at": 0.1312
+    },
+    {
+     "number": 3,
+     "at": 0.1486
+    },
+    {
+     "number": 4,
+     "at": 0.1628
+    },
+    {
+     "number": 5,
+     "at": 0.3249
+    },
+    {
+     "number": 6,
+     "at": 0.3365
+    },
+    {
+     "number": 7,
+     "at": 0.3603
+    },
+    {
+     "number": 8,
+     "at": 0.4153
+    },
+    {
+     "number": 9,
+     "at": 0.4521
+    },
+    {
+     "number": 10,
+     "at": 0.5243
+    },
+    {
+     "number": 11,
+     "at": 0.5606
+    },
+    {
+     "number": 12,
+     "at": 0.6209
+    },
+    {
+     "number": 13,
+     "at": 0.6439
+    },
+    {
+     "number": 14,
+     "at": 0.6864
+    },
+    {
+     "number": 15,
+     "at": 0.7228
+    },
+    {
+     "number": 16,
+     "at": 0.826
+    },
+    {
+     "number": 17,
+     "at": 0.8652
+    },
+    {
+     "number": 18,
+     "at": 0.9425
+    },
+    {
+     "number": 19,
+     "at": 0.9527
+    }
+   ]
+  },
+  "hungaroring": {
+   "source": "multiviewer",
+   "circuit_key": 4,
+   "year": 2021,
+   "fit": 0.0001,
+   "corners": [
+    {
+     "number": 1,
+     "at": 0.0827
+    },
+    {
+     "number": 2,
+     "at": 0.1979
+    },
+    {
+     "number": 3,
+     "at": 0.24
+    },
+    {
+     "number": 4,
+     "at": 0.3485
+    },
+    {
+     "number": 5,
+     "at": 0.4037
+    },
+    {
+     "number": 6,
+     "at": 0.4815
+    },
+    {
+     "number": 7,
+     "at": 0.4916
+    },
+    {
+     "number": 8,
+     "at": 0.5296
+    },
+    {
+     "number": 9,
+     "at": 0.5622
+    },
+    {
+     "number": 10,
+     "at": 0.6067
+    },
+    {
+     "number": 11,
+     "at": 0.6524
+    },
+    {
+     "number": 12,
+     "at": 0.743
+    },
+    {
+     "number": 13,
+     "at": 0.8047
+    },
+    {
+     "number": 14,
+     "at": 0.8722
+    }
+   ]
+  },
+  "zandvoort": {
+   "source": "multiviewer",
+   "circuit_key": 55,
+   "year": 2021,
+   "fit": 0.0006,
+   "corners": [
+    {
+     "number": 1,
+     "at": 0.1018
+    },
+    {
+     "number": 2,
+     "at": 0.1756
+    },
+    {
+     "number": 3,
+     "at": 0.2171
+    },
+    {
+     "number": 4,
+     "at": 0.2694
+    },
+    {
+     "number": 5,
+     "at": 0.3127
+    },
+    {
+     "number": 6,
+     "at": 0.3502
+    },
+    {
+     "number": 7,
+     "at": 0.4208
+    },
+    {
+     "number": 8,
+     "at": 0.4964
+    },
+    {
+     "number": 9,
+     "at": 0.5475
+    },
+    {
+     "number": 10,
+     "at": 0.6068
+    },
+    {
+     "number": 11,
+     "at": 0.7437
+    },
+    {
+     "number": 12,
+     "at": 0.7686
+    },
+    {
+     "number": 13,
+     "at": 0.8402
+    },
+    {
+     "number": 14,
+     "at": 0.9071
+    }
+   ]
+  },
+  "monza": {
+   "source": "multiviewer",
+   "circuit_key": 39,
+   "year": 2021,
+   "fit": 0.0001,
+   "corners": [
+    {
+     "number": 1,
+     "at": 0.1071
+    },
+    {
+     "number": 2,
+     "at": 0.1179
+    },
+    {
+     "number": 3,
+     "at": 0.2067
+    },
+    {
+     "number": 4,
+     "at": 0.3193
+    },
+    {
+     "number": 5,
+     "at": 0.3281
+    },
+    {
+     "number": 6,
+     "at": 0.3904
+    },
+    {
+     "number": 7,
+     "at": 0.4459
+    },
+    {
+     "number": 8,
+     "at": 0.6315
+    },
+    {
+     "number": 9,
+     "at": 0.6476
+    },
+    {
+     "number": 10,
+     "at": 0.6656
+    },
+    {
+     "number": 11,
+     "at": 0.8526
+    }
+   ]
+  },
+  "madring": {
+   "source": "geometry",
+   "corners": [
+    {
+     "number": 1,
+     "at": 0.0427
+    },
+    {
+     "number": 2,
+     "at": 0.056
+    },
+    {
+     "number": 3,
+     "at": 0.0693
+    },
+    {
+     "number": 4,
+     "at": 0.2387
+    },
+    {
+     "number": 5,
+     "at": 0.2533
+    },
+    {
+     "number": 6,
+     "at": 0.3087
+    },
+    {
+     "number": 7,
+     "at": 0.3207
+    },
+    {
+     "number": 8,
+     "at": 0.3727
+    },
+    {
+     "number": 9,
+     "at": 0.392
+    },
+    {
+     "number": 10,
+     "at": 0.4267
+    },
+    {
+     "number": 11,
+     "at": 0.44
+    },
+    {
+     "number": 12,
+     "at": 0.4613
+    },
+    {
+     "number": 13,
+     "at": 0.4747
+    },
+    {
+     "number": 14,
+     "at": 0.5633
+    },
+    {
+     "number": 15,
+     "at": 0.598
+    },
+    {
+     "number": 16,
+     "at": 0.656
+    },
+    {
+     "number": 17,
+     "at": 0.702
+    },
+    {
+     "number": 18,
+     "at": 0.7407
+    },
+    {
+     "number": 19,
+     "at": 0.7773
+    },
+    {
+     "number": 20,
+     "at": 0.8447
+    },
+    {
+     "number": 21,
+     "at": 0.8733
+    },
+    {
+     "number": 22,
+     "at": 0.9253
+    }
+   ]
+  },
+  "baku": {
+   "source": "multiviewer",
+   "circuit_key": 144,
+   "year": 2022,
+   "fit": 0.0043,
+   "corners": [
+    {
+     "number": 1,
+     "at": 0.0315
+    },
+    {
+     "number": 2,
+     "at": 0.0917
+    },
+    {
+     "number": 3,
+     "at": 0.2357
+    },
+    {
+     "number": 4,
+     "at": 0.268
+    },
+    {
+     "number": 5,
+     "at": 0.3289
+    },
+    {
+     "number": 6,
+     "at": 0.3331
+    },
+    {
+     "number": 7,
+     "at": 0.3898
+    },
+    {
+     "number": 8,
+     "at": 0.4287
+    },
+    {
+     "number": 9,
+     "at": 0.4292
+    },
+    {
+     "number": 10,
+     "at": 0.4345
+    },
+    {
+     "number": 11,
+     "at": 0.4382
+    },
+    {
+     "number": 12,
+     "at": 0.4555
+    },
+    {
+     "number": 13,
+     "at": 0.5221
+    },
+    {
+     "number": 14,
+     "at": 0.5607
+    },
+    {
+     "number": 15,
+     "at": 0.5989
+    },
+    {
+     "number": 16,
+     "at": 0.6586
+    },
+    {
+     "number": 17,
+     "at": 0.6924
+    },
+    {
+     "number": 18,
+     "at": 0.7309
+    },
+    {
+     "number": 19,
+     "at": 0.7598
+    },
+    {
+     "number": 20,
+     "at": 0.8099
+    }
+   ]
+  },
+  "sepang": {
+   "source": "geometry",
+   "corners": [
+    {
+     "number": 1,
+     "at": 0.0567
+    },
+    {
+     "number": 2,
+     "at": 0.076
+    },
+    {
+     "number": 3,
+     "at": 0.0893
+    },
+    {
+     "number": 4,
+     "at": 0.2353
+    },
+    {
+     "number": 5,
+     "at": 0.2953
+    },
+    {
+     "number": 6,
+     "at": 0.3127
+    },
+    {
+     "number": 7,
+     "at": 0.3453
+    },
+    {
+     "number": 8,
+     "at": 0.4127
+    },
+    {
+     "number": 9,
+     "at": 0.4367
+    },
+    {
+     "number": 10,
+     "at": 0.5173
+    },
+    {
+     "number": 11,
+     "at": 0.5413
+    },
+    {
+     "number": 12,
+     "at": 0.5873
+    },
+    {
+     "number": 13,
+     "at": 0.6433
+    },
+    {
+     "number": 14,
+     "at": 0.7107
+    },
+    {
+     "number": 15,
+     "at": 0.878
+    }
+   ]
+  },
+  "marina-bay": {
+   "source": "multiviewer",
+   "circuit_key": 61,
+   "year": 2023,
+   "fit": 0.0006,
+   "corners": [
+    {
+     "number": 1,
+     "at": 0.0587
+    },
+    {
+     "number": 2,
+     "at": 0.0747
+    },
+    {
+     "number": 3,
+     "at": 0.0874
+    },
+    {
+     "number": 4,
+     "at": 0.1216
+    },
+    {
+     "number": 5,
+     "at": 0.1737
+    },
+    {
+     "number": 6,
+     "at": 0.2591
+    },
+    {
+     "number": 7,
+     "at": 0.3372
+    },
+    {
+     "number": 8,
+     "at": 0.3857
+    },
+    {
+     "number": 9,
+     "at": 0.4254
+    },
+    {
+     "number": 10,
+     "at": 0.5092
+    },
+    {
+     "number": 11,
+     "at": 0.5413
+    },
+    {
+     "number": 12,
+     "at": 0.559
+    },
+    {
+     "number": 13,
+     "at": 0.5922
+    },
+    {
+     "number": 14,
+     "at": 0.7114
+    },
+    {
+     "number": 15,
+     "at": 0.7558
+    },
+    {
+     "number": 16,
+     "at": 0.8543
+    },
+    {
+     "number": 17,
+     "at": 0.8681
+    },
+    {
+     "number": 18,
+     "at": 0.924
+    },
+    {
+     "number": 19,
+     "at": 0.95
+    }
+   ]
+  },
+  "austin": {
+   "source": "multiviewer",
+   "circuit_key": 9,
+   "year": 2021,
+   "fit": 0.0016,
+   "corners": [
+    {
+     "number": 1,
+     "at": 0.0586
+    },
+    {
+     "number": 2,
+     "at": 0.1078
+    },
+    {
+     "number": 3,
+     "at": 0.1524
+    },
+    {
+     "number": 4,
+     "at": 0.1715
+    },
+    {
+     "number": 5,
+     "at": 0.1903
+    },
+    {
+     "number": 6,
+     "at": 0.2139
+    },
+    {
+     "number": 7,
+     "at": 0.256
+    },
+    {
+     "number": 8,
+     "at": 0.2825
+    },
+    {
+     "number": 9,
+     "at": 0.2985
+    },
+    {
+     "number": 10,
+     "at": 0.3414
+    },
+    {
+     "number": 11,
+     "at": 0.4099
+    },
+    {
+     "number": 12,
+     "at": 0.6288
+    },
+    {
+     "number": 13,
+     "at": 0.6708
+    },
+    {
+     "number": 14,
+     "at": 0.68
+    },
+    {
+     "number": 15,
+     "at": 0.7194
+    },
+    {
+     "number": 16,
+     "at": 0.7586
+    },
+    {
+     "number": 17,
+     "at": 0.78
+    },
+    {
+     "number": 18,
+     "at": 0.8027
+    },
+    {
+     "number": 19,
+     "at": 0.8572
+    },
+    {
+     "number": 20,
+     "at": 0.912
+    }
+   ]
+  },
+  "mexico-city": {
+   "source": "multiviewer",
+   "circuit_key": 65,
+   "year": 2021,
+   "fit": 0.0025,
+   "corners": [
+    {
+     "number": 1,
+     "at": 0.2696
+    },
+    {
+     "number": 2,
+     "at": 0.2877
+    },
+    {
+     "number": 3,
+     "at": 0.3037
+    },
+    {
+     "number": 4,
+     "at": 0.4528
+    },
+    {
+     "number": 5,
+     "at": 0.4832
+    },
+    {
+     "number": 6,
+     "at": 0.5139
+    },
+    {
+     "number": 7,
+     "at": 0.5916
+    },
+    {
+     "number": 8,
+     "at": 0.623
+    },
+    {
+     "number": 9,
+     "at": 0.6407
+    },
+    {
+     "number": 10,
+     "at": 0.686
+    },
+    {
+     "number": 11,
+     "at": 0.7095
+    },
+    {
+     "number": 12,
+     "at": 0.8409
+    },
+    {
+     "number": 13,
+     "at": 0.8843
+    },
+    {
+     "number": 14,
+     "at": 0.9027
+    },
+    {
+     "number": 15,
+     "at": 0.9123
+    },
+    {
+     "number": 16,
+     "at": 0.9229
+    },
+    {
+     "number": 17,
+     "at": 0.9573
+    }
+   ]
+  },
+  "interlagos": {
+   "source": "multiviewer",
+   "circuit_key": 14,
+   "year": 2023,
+   "fit": 0.0007,
+   "corners": [
+    {
+     "number": 1,
+     "at": 0.0756
+    },
+    {
+     "number": 2,
+     "at": 0.1013
+    },
+    {
+     "number": 3,
+     "at": 0.1449
+    },
+    {
+     "number": 4,
+     "at": 0.3216
+    },
+    {
+     "number": 5,
+     "at": 0.3599
+    },
+    {
+     "number": 6,
+     "at": 0.462
+    },
+    {
+     "number": 7,
+     "at": 0.494
+    },
+    {
+     "number": 8,
+     "at": 0.5325
+    },
+    {
+     "number": 9,
+     "at": 0.5651
+    },
+    {
+     "number": 10,
+     "at": 0.637
+    },
+    {
+     "number": 11,
+     "at": 0.6867
+    },
+    {
+     "number": 12,
+     "at": 0.7567
+    },
+    {
+     "number": 13,
+     "at": 0.7822
+    },
+    {
+     "number": 14,
+     "at": 0.8416
+    },
+    {
+     "number": 15,
+     "at": 0.9354
+    }
+   ]
+  },
+  "las-vegas": {
+   "source": "multiviewer",
+   "circuit_key": 152,
+   "year": 2023,
+   "fit": 0.0003,
+   "corners": [
+    {
+     "number": 1,
+     "at": 0.0244
+    },
+    {
+     "number": 2,
+     "at": 0.0412
+    },
+    {
+     "number": 3,
+     "at": 0.0716
+    },
+    {
+     "number": 4,
+     "at": 0.091
+    },
+    {
+     "number": 5,
+     "at": 0.2276
+    },
+    {
+     "number": 6,
+     "at": 0.2715
+    },
+    {
+     "number": 7,
+     "at": 0.3063
+    },
+    {
+     "number": 8,
+     "at": 0.317
+    },
+    {
+     "number": 9,
+     "at": 0.3374
+    },
+    {
+     "number": 10,
+     "at": 0.4165
+    },
+    {
+     "number": 11,
+     "at": 0.4606
+    },
+    {
+     "number": 12,
+     "at": 0.4978
+    },
+    {
+     "number": 13,
+     "at": 0.6209
+    },
+    {
+     "number": 14,
+     "at": 0.8134
+    },
+    {
+     "number": 15,
+     "at": 0.8229
+    },
+    {
+     "number": 16,
+     "at": 0.8321
+    },
+    {
+     "number": 17,
+     "at": 0.9531
+    }
+   ]
+  },
+  "lusail": {
+   "source": "multiviewer",
+   "circuit_key": 150,
+   "year": 2023,
+   "fit": 0.0001,
+   "corners": [
+    {
+     "number": 1,
+     "at": 0.1003
+    },
+    {
+     "number": 2,
+     "at": 0.1553
+    },
+    {
+     "number": 3,
+     "at": 0.1969
+    },
+    {
+     "number": 4,
+     "at": 0.2755
+    },
+    {
+     "number": 5,
+     "at": 0.3046
+    },
+    {
+     "number": 6,
+     "at": 0.3622
+    },
+    {
+     "number": 7,
+     "at": 0.4352
+    },
+    {
+     "number": 8,
+     "at": 0.4706
+    },
+    {
+     "number": 9,
+     "at": 0.4933
+    },
+    {
+     "number": 10,
+     "at": 0.537
+    },
+    {
+     "number": 11,
+     "at": 0.5948
+    },
+    {
+     "number": 12,
+     "at": 0.6513
+    },
+    {
+     "number": 13,
+     "at": 0.6877
+    },
+    {
+     "number": 14,
+     "at": 0.7257
+    },
+    {
+     "number": 15,
+     "at": 0.7812
+    },
+    {
+     "number": 16,
+     "at": 0.8695
+    }
+   ]
+  },
+  "yas-marina": {
+   "source": "multiviewer",
+   "circuit_key": 70,
+   "year": 2021,
+   "fit": 0.0004,
+   "corners": [
+    {
+     "number": 1,
+     "at": 0.0513
+    },
+    {
+     "number": 2,
+     "at": 0.0992
+    },
+    {
+     "number": 3,
+     "at": 0.139
+    },
+    {
+     "number": 4,
+     "at": 0.1755
+    },
+    {
+     "number": 5,
+     "at": 0.2515
+    },
+    {
+     "number": 6,
+     "at": 0.4781
+    },
+    {
+     "number": 7,
+     "at": 0.4897
+    },
+    {
+     "number": 8,
+     "at": 0.5278
+    },
+    {
+     "number": 9,
+     "at": 0.6818
+    },
+    {
+     "number": 10,
+     "at": 0.7464
+    },
+    {
+     "number": 11,
+     "at": 0.7764
+    },
+    {
+     "number": 12,
+     "at": 0.8027
+    },
+    {
+     "number": 13,
+     "at": 0.8243
+    },
+    {
+     "number": 14,
+     "at": 0.85
+    },
+    {
+     "number": 15,
+     "at": 0.8995
+    },
+    {
+     "number": 16,
+     "at": 0.9452
+    }
+   ]
+  }
+ }
+}
