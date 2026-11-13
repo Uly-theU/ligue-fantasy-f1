@@ -2,7 +2,7 @@
 
 > **Phase** : Alpha — gate E
 > **Type** : Logic
-> **Statut** : Ready
+> **Statut** : Done
 
 ## Contexte
 
@@ -13,9 +13,9 @@ Le temps du tour est celui de la fin du pas où la ligne est franchie. Le chrono
 
 ## Critères d'acceptation
 
-- [ ] Le temps final est interpolé dans le pas, selon la part de distance parcourue avant la ligne.
-- [ ] Même règle pour les deux passages de secteur.
-- [ ] Les pénalités de coupe restent ajoutées telles quelles.
+- [x] Le temps final est interpolé dans le pas, selon la part de distance parcourue avant la ligne.
+- [x] Même règle pour les deux passages de secteur.
+- [x] Les pénalités de coupe restent ajoutées telles quelles.
 
 ## Notes d'implémentation
 
