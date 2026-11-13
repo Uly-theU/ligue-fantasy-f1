@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { surroundingsFor } from '@/lib/circuit-surroundings';
 import { nearestCenter, paintClearance } from '@/lib/track-clearance';
 import { paintedHalfAt, pointAt } from '@/lib/track-path';
+import { CROSSING_ANGLE } from './road';
 import { insideGrid, mod, sampleGround, type RaceCtx } from './terrain';
 
 type OvalFrame = {
@@ -142,7 +143,7 @@ export function buildHistoric(ctx: RaceCtx, loops: number[][][]) {
 
 /** L'anneau coupe franchement la piste actuelle ici : le tablier passe au-dessus, la piste dans la cuvette. */
 function crossesRoad(ctx: RaceCtx, frame: OvalFrame): boolean {
-  return frame.delta > 1.05 && frame.dist < frame.painted + 18 * ctx.meter;
+  return frame.delta > CROSSING_ANGLE && frame.dist < frame.painted + 18 * ctx.meter;
 }
 
 /**

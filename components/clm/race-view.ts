@@ -8,7 +8,7 @@ import type { Track } from '@/lib/track-path';
 import { createCameraRig, frameCamera } from './race/camera';
 import { LOCAL_CAR_WIDTH, TYRE_RADIUS, createCarMotion, makeCar, placeCar, setBrakeLight } from './race/car';
 import { bowl, findUnderpasses } from './race/historic-loop';
-import { buildBoards, buildChevrons, buildGantry, buildSigns, buildStart, buildTrack, setGantryLights } from './race/road';
+import { GRAVEL_BASIN_HALF, buildBoards, buildChevrons, buildGantry, buildSigns, buildStart, buildTrack, setGantryLights } from './race/road';
 import { buildSurroundings } from './race/scenery';
 import { boundsOf, buildRelief, buildTerrain, interpolateDeck, type RaceCtx } from './race/terrain';
 import { skyTexture } from './race/textures';
@@ -140,7 +140,7 @@ export class RaceView {
     room.dispose();
     pmrem.dispose();
 
-    buildTerrain(this.ctx, bounds, this.ctx.reliefAt);
+    buildTerrain(this.ctx, bounds, this.ctx.reliefAt, this.ctx.half * GRAVEL_BASIN_HALF);
     buildTrack(this.ctx);
     buildStart(this.ctx);
     this.lamps = buildGantry(this.ctx);

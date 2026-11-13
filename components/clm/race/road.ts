@@ -9,15 +9,27 @@ import { mod, type RaceCtx } from './terrain';
 const ASPHALT = 1 / 0.85;
 /** Épaisseur des marquages posés sur le bitume, en demi-largeurs de piste (quelques centimètres à l'échelle de la voiture). */
 const DECAL_LIFT = 0.004;
+/** Demi-largeur du bac, en parts de la demi-piste. */
+export const GRAVEL_BASIN_HALF = 1.48;
+/** En dessous de cette fraction de largeur, le bac se resserre vers la peinture. */
+export const TIGHTEN_THRESHOLD = 0.85;
+/** Largeur de la transition qui accompagne le seuil de resserrement. */
+export const TIGHTEN_SPAN = 0.15;
+/** Angle au-delà duquel l'ancien anneau coupe franchement la piste actuelle. */
+export const CROSSING_ANGLE = 1.05;
+
+/** Demi-largeur du bac à une abscisse, peinture comprise quand la piste se resserre. */
+export function basinHalf(half: number, narrow: number, paintedLimit: number): number {
+  const gravelHalf = half * GRAVEL_BASIN_HALF;
+  const tightened = THREE.MathUtils.clamp((narrow - TIGHTEN_THRESHOLD) / TIGHTEN_SPAN, 0, 1);
+  return narrow * THREE.MathUtils.lerp(paintedLimit, gravelHalf, tightened);
+}
 
 export type Board = { s: number; x: number; y: number; label: string };
 
 /** Demi-largeur du bac, celle autour de laquelle le dévers pivote. */
 export function outerAt(ctx: RaceCtx, s: number): number {
-  const n = narrowAt(ctx.track, s);
-  const gravelHalf = ctx.half * 1.48;
-  const limit = paintedHalf(ctx.track);
-  return n * THREE.MathUtils.lerp(limit, gravelHalf, THREE.MathUtils.clamp((n - 0.85) / 0.15, 0, 1));
+  return basinHalf(ctx.half, narrowAt(ctx.track, s), paintedHalf(ctx.track));
 }
 
 /** Hausse du bitume à `lateral` mètres-jeu vers la gauche. */
@@ -46,12 +58,11 @@ function gravelColor(ctx: RaceCtx): string {
 
 export function buildTrack(ctx: RaceCtx) {
   const roadHalf = ctx.half * ASPHALT;
-  const gravelHalf = ctx.half * 1.48;
   const limit = paintedHalf(ctx.track);
   const keep = ctx.track.points.map((_, i) => ctx.track.narrow?.[i] ?? 1);
   const roadEdge = Float64Array.from(keep, (n) => roadHalf * n);
   // Là où la piste est resserrée, le bac s'arrête au bord du hors-piste pour ne pas mordre sur la portion voisine.
-  const gravelEdge = Float64Array.from(keep, (n) => n * THREE.MathUtils.lerp(limit, gravelHalf, THREE.MathUtils.clamp((n - 0.85) / 0.15, 0, 1)));
+  const gravelEdge = Float64Array.from(keep, (n) => basinHalf(ctx.half, n, limit));
   if (ctx.biome.walls) {
     for (let i = 0; i < gravelEdge.length; i += 1) {
       const wall = edgeReach(ctx, ctx.track.points[i].s);

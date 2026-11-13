@@ -239,7 +239,7 @@ export function insideGrid(ctx: RaceCtx, x: number, z: number): boolean {
   return u >= 0 && v >= 0 && u < ctx.cols - 1 && v < ctx.rows - 1;
 }
 
-export function buildTerrain(ctx: RaceCtx, bounds: Bounds, reliefAt: (s: number) => number) {
+export function buildTerrain(ctx: RaceCtx, bounds: Bounds, reliefAt: (s: number) => number, basinHalfWidth: number) {
   const pad = Math.max(ctx.half * 8, ctx.span * 0.2);
   const minX = bounds.minX - pad;
   const maxX = bounds.maxX + pad;
@@ -287,7 +287,7 @@ export function buildTerrain(ctx: RaceCtx, bounds: Bounds, reliefAt: (s: number)
   }
   // Une maille fait jusqu'à 30 m : entre deux sommets, le sol remonterait au-dessus d'un bitume posé à quelques centimètres.
   // Tout sommet d'un triangle qui touche la chaussée passe donc sous elle.
-  const reach = ctx.half * 1.48 + Math.hypot(stepX, stepZ);
+  const reach = basinHalfWidth + Math.hypot(stepX, stepZ);
   const margin = Math.max(ctx.roadLift * 2, ctx.half * 0.03);
   const stride = Math.max(Math.min(stepX, stepZ) * 0.5, 1e-3);
   for (let s = 0; s < ctx.track.length; s += stride) {
