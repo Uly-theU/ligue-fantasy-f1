@@ -200,7 +200,8 @@ async function pipeBytes(bytes: Uint8Array, codec: CompressionStream | Decompres
 
 function writeAll(writable: WritableStream<BufferSource>, bytes: Uint8Array): Promise<void> {
   const writer = writable.getWriter();
-  return writer.write(bytes).then(() => writer.close());
+  // Uint8Array<ArrayBufferLike> n’est pas un BufferSource pour ce TypeScript. À l’exécution, Node 20 attend bien un Uint8Array.
+  return writer.write(bytes as BufferSource).then(() => writer.close());
 }
 
 function encodeBase64(bytes: Uint8Array): string {
