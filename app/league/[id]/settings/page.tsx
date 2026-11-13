@@ -400,7 +400,7 @@ export default function LeagueSettingsPage() {
           >
             <div className="font-semibold">💰 Budget Fixe</div>
             <p className="text-sm text-muted-foreground mt-1">
-              Chaque joueur dispose d'un budget pour acheter des pilotes sur le marché.
+              Chaque joueur dispose d&apos;un budget pour acheter des pilotes sur le marché.
             </p>
           </button>
         </CardContent>
