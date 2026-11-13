@@ -16,8 +16,8 @@
     "comment": "Stories 011 à 014. DNS hors boucle de test."
   },
   "gate-e": {
-    "status": "open",
-    "comment": "Chrono honnête. Stories 015 à 018. Preuve en local."
+    "status": "closed",
+    "comment": "Fermé le 2026-11-13. Stories 015 à 018. Monaco 1:00.644 et Monza 1:12.923, identiques à 60 et 144 Hz. Pilote scripté qui suit le tracé, pas une main."
   },
   "gate-f": {
     "status": "open",

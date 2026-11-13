@@ -2,7 +2,7 @@
 
 > **Phase** : Alpha — gate E
 > **Type** : Logic
-> **Statut** : In Progress
+> **Statut** : Done
 
 ## Contexte
 
