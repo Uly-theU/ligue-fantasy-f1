@@ -12,7 +12,7 @@
 
 | Métrique | Valeur |
 |----------|--------|
-| Sessions totales | 14 |
+| Sessions totales | 15 |
 | Date première session | 2026-10-06 |
 | Date dernière session | 2026-11-13 |
 
@@ -34,6 +34,7 @@
 | 12 | 2026-11-13 | story 018 | PR #7 mergée (`fca26c5`). 281 tests, CI verte. | `takeClmSteps` borne une image à 60 pas de 1/120 s. La pose affichée est interpolée. Démo Monaco fluide jusqu'à Sainte-Dévote, tour non bouclé. Gate E ouvert tant que deux tours complets ne sont pas joués. | Tours complets Monaco et un circuit rapide, puis fermeture de E |
 | 13 | 2026-11-13 | fermeture gate E | Tours scriptés Monaco et Monza, à 60 Hz et 144 Hz. | Monaco 1:00.644 sans pénalité. Monza 1:12.923 avec 1,6 s de coupe. Les deux cadences donnent le même `ClmCar`. Ce n'est pas une conduite à la main. | Stories 019 et 022 |
 | 14 | 2026-11-13 | story 022 | PR #8 mergée (`fcde8e4`). CI verte au second passage. | Une entrée par pas de 1/120 s, rejouée à l'identique. 11 973 octets pour 90 s au clavier. Le premier passage CI échouait : Node 20 refusait un ArrayBuffer dans le compresseur. | Story 023. 020 après 019 |
+| 15 | 2026-11-13 | story 019 | PR #9 mergée (`5103843`). CI verte. | `race-view.ts` assemble. Monaco, Monza, Marina Bay et Spa : PNG d'ouverture identiques avant et après. Limite : pas de tour complet, pas de vue cockpit. | 020 après la fin de 023 sur `time-trial.tsx` |
 
 ## Consommation par phase
 

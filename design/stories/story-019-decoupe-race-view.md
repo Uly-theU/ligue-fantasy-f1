@@ -2,7 +2,7 @@
 
 > **Phase** : Alpha — gate F
 > **Type** : Refactor
-> **Statut** : In Progress
+> **Statut** : Done
 
 ## Contexte
 

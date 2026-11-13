@@ -11,7 +11,7 @@
 ## Status
 
 - **Statut global** : On Track
-- **Progression** : portes A et D vues dans le navigateur sur un Postgres local temporaire. Healthcheck `/api/health` en 200. Score d'un GP fictif : 29 points au classement. Le second compte Supabase et le Compose restent ouverts. Contre-la-montre : gate E fermé sur `fix/minijeu-revue`. Story 022 intégrée (`fcde8e4`) : un tour clavier de 90 s pèse 11,7 Ko et le rejeu retrouve le même temps. Story 019 encore en cours. Gate G ouvert.
+- **Progression** : portes A et D vues dans le navigateur sur un Postgres local temporaire. Healthcheck `/api/health` en 200. Score d'un GP fictif : 29 points au classement. Le second compte Supabase et le Compose restent ouverts. Contre-la-montre : gate E fermé. Stories 019 et 022 intégrées sur `fix/minijeu-revue` (`5103843`). La vue de course est découpée ; les quatre images d'ouverture sont identiques octet pour octet. Gate F et gate G ouverts.
 - **Blockers** : clés Supabase réelles absentes. Docker n'est pas installé, le Compose n'a pas démarré. Le Postgres de cette preuve vit dans `/tmp` et ne survit pas à un redémarrage.
 - **Dernière mise à jour** : `2026-11-13`
 
@@ -54,7 +54,7 @@
 | 016 | Un demi-tour ne valide plus le tour | Logic | E | Done | `design/stories/story-016-demi-tour-ligne.md` |
 | 017 | Instant de franchissement interpolé | Logic | E | Done | `design/stories/story-017-franchissement-interpole.md` |
 | 018 | Pas de simulation fixe | Logic | E | Done | `design/stories/story-018-pas-fixe.md` |
-| 019 | Découper race-view.ts | Refactor | F | Ready | `design/stories/story-019-decoupe-race-view.md` |
+| 019 | Découper race-view.ts | Refactor | F | Done | `design/stories/story-019-decoupe-race-view.md` |
 | 020 | Libérer la scène, changer de caméra sans la recréer | Logic | F | Ready | `design/stories/story-020-liberer-scene.md` |
 | 021 | Construction de scène mesurée, fantôme correct | Logic | F | Ready | `design/stories/story-021-construction-scene.md` |
 | 022 | Enregistrer les entrées du tour | Logic | G | Done | `design/stories/story-022-entrees-du-tour.md` |
@@ -96,7 +96,7 @@ Direction de l'interface du mini jeu : arcade des années 80–90, demandée le 
 1. Renseigner l'URL et la clé anon Supabase dans un `.env` lu par Compose, puis `docker compose up -d` sur le VPS.
 2. Créer un second compte (Google ou lien magique) et vérifier la ligne `profiles`.
 3. Ne pas changer le DNS.
-4. Contre-la-montre : 022 est intégrée (`fcde8e4`). 019 est encore en cours. 020 peut ensuite toucher la caméra de `time-trial.tsx`. Enchaîner 023. Le HUD de 026 attend 020. Ne pas merger la PR #5.
+4. Contre-la-montre : 019 et 022 sont intégrées. 023 tient `time-trial.tsx` pour l'envoi du journal. 020 démarre ensuite : libération WebGL, puis la caméra par prop. Le HUD de 026 attend 020. Ne pas merger la PR #5.
 
 ## Journal
 
@@ -121,4 +121,5 @@ Direction de l'interface du mini jeu : arcade des années 80–90, demandée le 
 | 2026-11-13 | Story 018 mergée, PR #7, commit `fca26c5`. CI https://github.com/Uly-theU/ligue-fantasy-f1/actions/runs/43431335944 verte. Pas fixe de 1/120 s. Tour complet non bouclé : gate E encore ouvert. |
 | 2026-11-13 | Gate E fermé. Tours scriptés : Monaco 1:00.644, Monza 1:12.923, identiques à 60 et 144 Hz. Pas une conduite à la main. |
 | 2026-11-13 | Story 022 mergée, PR #8, commit `fcde8e4`. CI https://github.com/Uly-theU/ligue-fantasy-f1/actions/runs/43447896107 verte après correction du compresseur sous Node 20. Tour clavier de 90 s : 11 973 octets. Gate G encore ouvert. |
+| 2026-11-13 | Story 019 mergée, PR #9, commit `5103843`. CI https://github.com/Uly-theU/ligue-fantasy-f1/actions/runs/43448988746 verte. Quatre images d'ouverture identiques octet pour octet. Pas un tour complet ni la vue cockpit. Gate F encore ouvert. |
 | 2026-10-20 | Preuve locale : Postgres temporaire, seed 22 pilotes / 24 GP, parcours navigateur (ligue, draft, équipe, classement 29 pts). Cron scores 200, ingestion 401 sans secret. |
