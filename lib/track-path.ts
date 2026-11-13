@@ -189,7 +189,8 @@ export function localTrack(track: Track, x: number, y: number, hintS: number): T
 
 /** Point du tracé le plus proche, sans préférence pour l'abscisse en cours. */
 export function nearestTrack(track: Track, x: number, y: number): TrackProjection {
-  return search(track, x, y, 0, track.length, 0);
+  if (!Number.isFinite(x) || !Number.isFinite(y)) return search(track, x, y, 0, track.length, 0);
+  return nearestIndexed(track, x, y);
 }
 
 export function pointAt(track: Track, s: number): TrackPoint {
@@ -544,6 +545,156 @@ function relaxHiddenKinks(points: TrackPoint[], halfWidth: number, closed: boole
 }
 
 const tangentCache = new WeakMap<TrackPoint[], Float64Array>();
+
+type SegmentGrid = {
+  cell: number;
+  originX: number;
+  originY: number;
+  cols: number;
+  rows: number;
+  buckets: number[][];
+  seen: Int32Array;
+  stamp: number;
+};
+
+const segmentGrids = new WeakMap<TrackPoint[], SegmentGrid>();
+
+/**
+ * Même plus proche segment que le parcours complet, sans relire tout le circuit à chaque pas.
+ * On s'arrête quand le carré déjà lu est strictement plus large que la distance retenue :
+ * dehors, tout point est plus loin, donc aucun autre segment ne peut gagner, même à égalité.
+ */
+function nearestIndexed(track: Track, x: number, y: number): TrackProjection {
+  const grid = segmentGrid(track);
+  const { cell, originX, originY, cols, rows, buckets } = grid;
+  const cx = Math.floor((x - originX) / cell);
+  const cy = Math.floor((y - originY) / cell);
+  const found: { proj: TrackProjection | null; index: number; distance: number } = {
+    proj: null,
+    index: -1,
+    distance: Infinity,
+  };
+  grid.stamp += 1;
+  if (grid.stamp >= 0x7fffffff) {
+    grid.seen.fill(0);
+    grid.stamp = 1;
+  }
+  const stamp = grid.stamp;
+  const maxRing = cols + rows + 2;
+  for (let ring = 0; ring <= maxRing; ring += 1) {
+    const r0 = cy - ring;
+    const r1 = cy + ring;
+    const c0 = cx - ring;
+    const c1 = cx + ring;
+    for (let r = r0; r <= r1; r += 1) {
+      for (let c = c0; c <= c1; c += 1) {
+        if (ring > 0 && r !== r0 && r !== r1 && c !== c0 && c !== c1) continue;
+        if (r < 0 || c < 0 || r >= rows || c >= cols) continue;
+        const bucket = buckets[r * cols + c];
+        for (let k = 0; k < bucket.length; k += 1) {
+          const index = bucket[k];
+          if (grid.seen[index] === stamp) continue;
+          grid.seen[index] = stamp;
+          const proj = projectSegment(track, x, y, index);
+          if (proj.distance < found.distance || (proj.distance === found.distance && index < found.index)) {
+            found.distance = proj.distance;
+            found.index = index;
+            found.proj = proj;
+          }
+        }
+      }
+    }
+    const minX = originX + (cx - ring) * cell;
+    const maxX = originX + (cx + ring + 1) * cell;
+    const minY = originY + (cy - ring) * cell;
+    const maxY = originY + (cy + ring + 1) * cell;
+    const distToBoundary = Math.min(x - minX, maxX - x, y - minY, maxY - y);
+    if (found.proj && found.distance < distToBoundary) {
+      const along = fanS(track, x, y, found.index);
+      return along == null ? found.proj : { ...found.proj, s: along };
+    }
+  }
+  return search(track, x, y, 0, track.length, 0);
+}
+
+function segmentGrid(track: Track): SegmentGrid {
+  const cached = segmentGrids.get(track.points);
+  if (cached) return cached;
+  const pts = track.points;
+  const n = pts.length;
+  const segCount = track.closed ? n : Math.max(0, n - 1);
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+  for (let i = 0; i < n; i += 1) {
+    minX = Math.min(minX, pts[i].x);
+    minY = Math.min(minY, pts[i].y);
+    maxX = Math.max(maxX, pts[i].x);
+    maxY = Math.max(maxY, pts[i].y);
+  }
+  if (!Number.isFinite(minX)) {
+    minX = 0;
+    minY = 0;
+    maxX = 1;
+    maxY = 1;
+  }
+  const span = Math.max(maxX - minX, maxY - minY, 1e-6);
+  const cells = Math.max(4, Math.round(Math.sqrt(Math.max(segCount, 1))));
+  const cell = span / cells;
+  const cols = Math.max(1, Math.ceil((maxX - minX) / cell));
+  const rows = Math.max(1, Math.ceil((maxY - minY) / cell));
+  const buckets: number[][] = Array.from({ length: cols * rows }, () => []);
+  for (let i = 0; i < segCount; i += 1) {
+    const a = pts[i];
+    const b = pts[track.closed ? (i + 1) % n : i + 1];
+    let c0 = Math.floor((Math.min(a.x, b.x) - minX) / cell);
+    let c1 = Math.floor((Math.max(a.x, b.x) - minX) / cell);
+    let r0 = Math.floor((Math.min(a.y, b.y) - minY) / cell);
+    let r1 = Math.floor((Math.max(a.y, b.y) - minY) / cell);
+    c0 = clamp(c0, 0, cols - 1);
+    c1 = clamp(c1, 0, cols - 1);
+    r0 = clamp(r0, 0, rows - 1);
+    r1 = clamp(r1, 0, rows - 1);
+    for (let r = r0; r <= r1; r += 1) {
+      for (let c = c0; c <= c1; c += 1) buckets[r * cols + c].push(i);
+    }
+  }
+  const grid: SegmentGrid = {
+    cell,
+    originX: minX,
+    originY: minY,
+    cols,
+    rows,
+    buckets,
+    seen: new Int32Array(Math.max(segCount, 1)),
+    stamp: 1,
+  };
+  segmentGrids.set(track.points, grid);
+  return grid;
+}
+
+function projectSegment(track: Track, x: number, y: number, index: number): TrackProjection {
+  const pts = track.points;
+  const n = pts.length;
+  const a = pts[index];
+  const b = pts[track.closed ? (index + 1) % n : index + 1];
+  const s0 = a.s;
+  const s1 = track.closed && index === n - 1 ? track.length : b.s;
+  const abx = b.x - a.x;
+  const aby = b.y - a.y;
+  const len2 = abx * abx + aby * aby;
+  const t = len2 > 0 ? clamp(((x - a.x) * abx + (y - a.y) * aby) / len2, 0, 1) : 0;
+  const px = a.x + abx * t;
+  const py = a.y + aby * t;
+  return {
+    x: px,
+    y: py,
+    s: s0 + (s1 - s0) * t,
+    distance: Math.hypot(x - px, y - py),
+    angle: Math.atan2(aby, abx),
+  };
+}
 
 /** Tangente unitaire à chaque sommet, moyenne des deux segments voisins. */
 function vertexTangents(track: Track): Float64Array {

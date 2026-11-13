@@ -187,6 +187,7 @@ export default function ClmPage() {
         track={track}
         lengthKm={trial.length_km ?? 0}
         circuitId={trialKey}
+        gameweekId={trial.gameweek_id}
         elevation={elevation}
         signs={signs}
       />

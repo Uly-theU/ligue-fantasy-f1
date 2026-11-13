@@ -14,6 +14,9 @@ const G = 9.81;
 const LOAD_MIN = 0.35;
 const LOAD_MAX = 1.65;
 
+/** Profils déjà triés et bornés : le rejeu les relit à chaque pas, sans les recopier. */
+const cleanProfiles = new WeakSet<ElevationSample[]>();
+
 /** Altitude en mètres à une fraction du tour, sur le profil brut [fraction, altitude]. */
 export function profileAt(points: Array<[number, number]>, fraction: number): number {
   if (points.length === 0) return 0;
@@ -49,10 +52,7 @@ export function sampleElevation(
 ): ElevationSampled {
   const flat = { grade: 0, load: 1 };
   if (!(metersPerUnit > 0) || !(length > 0)) return flat;
-  const nodes = samples
-    .filter((sample) => Number.isFinite(sample.s) && Number.isFinite(sample.z))
-    .map((sample) => ({ s: closed ? mod(sample.s, length) : sample.s, z: sample.z }))
-    .sort((a, b) => a.s - b.s);
+  const nodes = elevationNodes(samples, length, closed);
   if (nodes.length < 2) return flat;
 
   const at = closed ? mod(s, length) : s;
@@ -89,21 +89,56 @@ export function sampleElevation(
   };
 }
 
+function elevationNodes(samples: ElevationSample[], length: number, closed: boolean): ElevationSample[] {
+  if (cleanProfiles.has(samples)) return samples;
+  if (reusableProfile(samples, length, closed)) {
+    cleanProfiles.add(samples);
+    return samples;
+  }
+  return samples
+    .filter((sample) => Number.isFinite(sample.s) && Number.isFinite(sample.z))
+    .map((sample) => ({ s: closed ? mod(sample.s, length) : sample.s, z: sample.z }))
+    .sort((a, b) => a.s - b.s);
+}
+
+/** Vrai quand filtrer, ramener dans le tour et trier laisserait le tableau identique. */
+function reusableProfile(samples: ElevationSample[], length: number, closed: boolean): boolean {
+  let previous = -Infinity;
+  for (let i = 0; i < samples.length; i += 1) {
+    const sample = samples[i];
+    if (!Number.isFinite(sample.s) || !Number.isFinite(sample.z)) return false;
+    const s = closed ? mod(sample.s, length) : sample.s;
+    if (s !== sample.s || s < previous) return false;
+    previous = s;
+  }
+  return true;
+}
+
 function findSegment(nodes: ElevationSample[], at: number, length: number, closed: boolean): number {
   const count = nodes.length;
-  if (!closed) {
-    for (let i = 0; i < count - 1; i += 1) {
-      if (at < nodes[i + 1].s) return i;
-    }
-    return count - 1;
+  if (!closed) return greatestAtMost(nodes, at);
+  if (at < nodes[0].s) return segmentContains(nodes, count - 1, at, length) ? count - 1 : 0;
+  const index = greatestAtMost(nodes, at);
+  return segmentContains(nodes, index, at, length) ? index : 0;
+}
+
+/** Dernier point dont l'abscisse est ≤ `at`. Les nœuds sont triés. */
+function greatestAtMost(nodes: ElevationSample[], at: number): number {
+  let lo = 0;
+  let hi = nodes.length - 1;
+  while (lo < hi) {
+    const mid = (lo + hi + 1) >> 1;
+    if (nodes[mid].s <= at) lo = mid;
+    else hi = mid - 1;
   }
-  for (let i = 0; i < count; i += 1) {
-    const s0 = nodes[i].s;
-    const s1 = s0 + segmentSpan(nodes, i, length, true);
-    const pos = at < s0 ? at + length : at;
-    if (pos >= s0 && pos < s1) return i;
-  }
-  return 0;
+  return lo;
+}
+
+function segmentContains(nodes: ElevationSample[], index: number, at: number, length: number): boolean {
+  const s0 = nodes[index].s;
+  const s1 = s0 + segmentSpan(nodes, index, length, true);
+  const pos = at < s0 ? at + length : at;
+  return pos >= s0 && pos < s1;
 }
 
 function segmentSpan(nodes: ElevationSample[], index: number, length: number, closed: boolean): number {

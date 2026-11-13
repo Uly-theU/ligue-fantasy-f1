@@ -3,7 +3,8 @@
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 import { Button } from '@/components/ui/button';
 import { buildRecord, crossedSector, deltaAt, formatDelta, parseRecord, sampleAtTime, type LapRecord, type LapSample } from '@/lib/clm-record';
-import { createLapInputLog, recordLapInput, type LapInputLog } from '@/lib/clm-replay';
+import { createLapInputLog, recordLapInput, serializeLapInputs, type ClmInputSpan, type LapInputLog } from '@/lib/clm-replay';
+import { apiFetch } from '@/lib/api';
 import { biomeFor } from '@/lib/circuit-biome';
 import { CLM_STEP_SECONDS, clmStepAlpha, createCar, crossingFraction, formatLap, interpolateClmPose, rampSteer, RUNOFF_RATIO, speedKmh, steerResponse, stepClm, STREET_RUNOFF_RATIO, takeClmSteps, topSpeed, type ClmCar } from '@/lib/clm';
 import { sampleElevation, type ElevationSample } from '@/lib/grade';
@@ -115,12 +116,14 @@ export function TimeTrial({
   circuitId,
   elevation,
   signs,
+  gameweekId = null,
 }: {
   track: Track;
   lengthKm: number;
   circuitId: string;
   elevation?: ElevationSample[];
   signs?: TrackSign[];
+  gameweekId?: string | null;
 }) {
   const hostRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<HTMLCanvasElement>(null);
@@ -131,6 +134,9 @@ export function TimeTrial({
   const [hud, setHud] = useState<Hud>(EMPTY_HUD);
   const [camera, setCamera] = useState<RaceCamera>('chase');
   const cameraRef = useRef<RaceCamera>('chase');
+  const submitSeq = useRef(0);
+  const [officialTime, setOfficialTime] = useState<number | null>(null);
+  const [homologation, setHomologation] = useState<'idle' | 'pending' | 'done' | 'error'>('idle');
 
   useEffect(() => {
     try {
@@ -201,6 +207,9 @@ export function TimeTrial({
     const host = hostRef.current;
     const map = mapRef.current;
     if (!host || !map) return;
+    submitSeq.current += 1;
+    setOfficialTime(null);
+    setHomologation('idle');
 
     const car = createCar(track);
     const record = readRecord(circuitId);
@@ -333,6 +342,25 @@ export function TimeTrial({
             sim.phase = 'finished';
             sim.previous = sim.car;
             sim.leftover = 0;
+            if (gameweekId) {
+              const seq = submitSeq.current;
+              const spans = sim.inputs.spans.map((span) => ({
+                steer: span.steer,
+                throttle: span.throttle,
+                brake: span.brake,
+                steps: span.steps,
+              }));
+              setHomologation('pending');
+              void submitOfficialLap(gameweekId, spans).then((time) => {
+                if (submitSeq.current !== seq) return;
+                setOfficialTime(time);
+                setHomologation('done');
+              }).catch((error: unknown) => {
+                console.error(error);
+                if (submitSeq.current !== seq) return;
+                setHomologation('error');
+              });
+            }
             break;
           }
         }
@@ -381,7 +409,7 @@ export function TimeTrial({
       engineRef.current = null;
       view?.dispose();
     };
-  }, [track, lengthKm, circuitId, elevation, signs]);
+  }, [track, lengthKm, circuitId, elevation, signs, gameweekId]);
 
   function begin(sim: Sim, now: number) {
     sim.phase = 'countdown';
@@ -394,6 +422,7 @@ export function TimeTrial({
     sim.cut = null;
     sim.rescuedUntil = 0;
     sim.inputs = createLapInputLog();
+    clearOfficial();
   }
 
   function reset(sim: Sim, course: Track, now: number) {
@@ -413,6 +442,13 @@ export function TimeTrial({
     sim.cut = null;
     sim.rescuedUntil = 0;
     sim.inputs = createLapInputLog();
+    clearOfficial();
+  }
+
+  function clearOfficial() {
+    submitSeq.current += 1;
+    setOfficialTime(null);
+    setHomologation('idle');
   }
 
   const start = () => {
@@ -446,7 +482,8 @@ export function TimeTrial({
     },
   });
 
-  const live = liveMessage(hud);
+  const displayedTime = hud.phase === 'finished' && officialTime != null ? officialTime : hud.time;
+  const live = liveMessage(hud, displayedTime);
 
   return (
     <div role="application" aria-label="Contre-la-montre. Haut pour accélérer, flèches pour tourner, espace pour freiner.">
@@ -462,7 +499,7 @@ export function TimeTrial({
         <div className="pointer-events-none absolute inset-x-0 top-0 flex items-start justify-between gap-4 p-4">
           <div>
             <p className="text-[11px] uppercase tracking-[0.18em] text-white/55">Chrono</p>
-            <p className="font-mono text-4xl tabular-nums leading-none">{formatLap(hud.phase === 'ready' || hud.phase === 'countdown' ? 0 : hud.time)}</p>
+            <p className="font-mono text-4xl tabular-nums leading-none">{formatLap(hud.phase === 'ready' || hud.phase === 'countdown' ? 0 : displayedTime)}</p>
             {hud.phase === 'racing' && hud.delta != null && (
               <p className={`mt-2 font-mono text-2xl tabular-nums leading-none ${hud.delta <= 0 ? 'text-emerald-400' : 'text-ember'}`}>{formatDelta(hud.delta)}</p>
             )}
@@ -540,7 +577,16 @@ export function TimeTrial({
           <div className="absolute inset-0 flex items-center justify-center bg-[#100c28]/55 p-6">
             <div className="rounded-3xl border border-white/15 bg-[#120e30]/90 px-8 py-6 text-center backdrop-blur-md">
               <p className="text-xs uppercase tracking-[0.18em] text-white/55">Tour bouclé</p>
-              <p className="mt-1 font-mono text-5xl tabular-nums">{formatLap(hud.time)}</p>
+              <p className="mt-1 font-mono text-5xl tabular-nums">{formatLap(displayedTime)}</p>
+              {gameweekId && homologation === 'pending' && (
+                <p className="mt-1 text-xs text-white/55">Homologation du temps…</p>
+              )}
+              {gameweekId && homologation === 'done' && (
+                <p className="mt-1 text-xs text-white/55">Temps officiel</p>
+              )}
+              {gameweekId && homologation === 'error' && (
+                <p className="mt-1 text-xs text-ember">Temps non homologué</p>
+              )}
               <p className="mt-2 text-sm text-white/70">
                 {hud.improved
                   ? hud.gap == null ? 'Nouveau record' : `Nouveau record · ${formatDelta(hud.gap)} s`
@@ -571,8 +617,8 @@ export function TimeTrial({
   );
 }
 
-function liveMessage(hud: Hud): string {
-  if (hud.phase === 'finished') return `Tour bouclé en ${formatLap(hud.time)}`;
+function liveMessage(hud: Hud, time: number): string {
+  if (hud.phase === 'finished') return `Tour bouclé en ${formatLap(time)}`;
   if (hud.phase === 'countdown' && hud.count) return String(hud.count);
   if (hud.go) return 'Partez';
   if (hud.rescued) return 'Remis en piste';
@@ -651,6 +697,18 @@ function writeRecord(circuitId: string, record: LapRecord) {
 
 function recordKey(circuitId: string) {
   return `clm-record:v5:${circuitId}`;
+}
+
+async function submitOfficialLap(gameweekId: string, spans: readonly ClmInputSpan[]): Promise<number> {
+  const inputs = await serializeLapInputs(spans);
+  const data = await apiFetch<{ time: number }>('/api/clm/laps', {
+    method: 'POST',
+    body: JSON.stringify({ gameweek_id: gameweekId, inputs }),
+  });
+  if (typeof data.time !== 'number' || !Number.isFinite(data.time)) {
+    throw new Error('Temps officiel illisible');
+  }
+  return data.time;
 }
 
 function Pedal({ label, value, tone }: { label: string; value: number; tone: 'accel' | 'brake' }) {

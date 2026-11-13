@@ -26,6 +26,7 @@ model Profile {
   activity_logs   ActivityLog[]
   draft_picks     DraftPick[]
   beta_feedbacks  BetaFeedback[]
+  time_trial_laps TimeTrialLap[]
 
   @@map("profiles")
 }
@@ -147,6 +148,7 @@ model Gameweek {
   performances    Performance[]
   scores          Score[]
   lineup_snapshots LineupSnapshot[]
+  time_trial_laps TimeTrialLap[]
   circuit_ref     Circuit?       @relation(fields: [circuit_id], references: [id], onDelete: SetNull)
   layout          CircuitLayout? @relation(fields: [circuit_layout_id], references: [id], onDelete: SetNull)
 
@@ -294,6 +296,28 @@ model BetaFeedback {
   @@map("beta_feedbacks")
 }
 
+// Meilleur tour de contre-la-montre d'un joueur sur un Grand Prix. Le temps vient du rejeu serveur.
+
+model TimeTrialLap {
+  id            String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  user_id       String   @db.Uuid
+  gameweek_id   String   @db.Uuid
+  circuit_id    String?  @db.VarChar(80)
+  official_time Float
+  sectors       Json
+  penalty       Float    @default(0)
+  inputs        String   @db.Text
+  created_at    DateTime @default(now()) @db.Timestamptz(6)
+
+  profile       Profile  @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  gameweek      Gameweek @relation(fields: [gameweek_id], references: [id], onDelete: Cascade)
+  circuit       Circuit? @relation(fields: [circuit_id], references: [id], onDelete: SetNull)
+
+  @@unique([user_id, gameweek_id])
+  @@index([gameweek_id])
+  @@map("time_trial_laps")
+}
+
 // Référentiel F1 (F1DB, CC BY 4.0). Distinct des équipes fantasy.
 
 model Circuit {
@@ -315,9 +339,10 @@ model Circuit {
   created_at     DateTime @default(now()) @db.Timestamptz(6)
   updated_at     DateTime @default(now()) @updatedAt @db.Timestamptz(6)
 
-  layouts        CircuitLayout[]
-  races          RaceRecord[]
-  gameweeks      Gameweek[]
+  layouts         CircuitLayout[]
+  races           RaceRecord[]
+  gameweeks       Gameweek[]
+  time_trial_laps TimeTrialLap[]
 
   @@map("circuits")
 }
