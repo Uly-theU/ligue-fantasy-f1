@@ -145,8 +145,12 @@ export function noteLap(prevS: number, nextS: number, seen: number, length: numb
   const ahead = wrapForward(prevS, nextS, length);
   const back = wrapForward(nextS, prevS, length);
   if (Math.min(ahead, back) > length * 0.04) return { s: prevS, seen, finished: false };
-  const finished = ahead < back && ahead < length * 0.04 && prevS > length * 0.85 && nextS < length * 0.15 && seen > length * 0.75;
-  return { s: nextS, seen: finished ? seen : Math.max(seen, nextS), finished };
+  const forward = ahead < back;
+  const finished = forward && ahead < length * 0.04 && prevS > length * 0.85 && nextS < length * 0.15 && seen > length * 0.75;
+  // `seen` suit le pas dans le sens de la marche. Un raccord d'abscisse reste dans les 4 % du tour ;
+  // au-delà, nextS a été posé en reculant et Math.max(seen, nextS) sauterait en fin de tracé.
+  const extendsSeen = forward && nextS <= seen + length * 0.04 + ahead;
+  return { s: nextS, seen: finished || !extendsSeen ? seen : Math.max(seen, nextS), finished };
 }
 
 export function stepClm(

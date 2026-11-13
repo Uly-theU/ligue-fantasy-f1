@@ -157,6 +157,39 @@ describe('contre-la-montre', () => {
     expect(noteLap(99, 1, 80, 100)).toMatchObject({ s: 1, finished: true });
   });
 
+  it('ne porte pas seen au-delà du départ quand la ligne est franchie à l’envers', () => {
+    const length = 1000;
+    const noted = noteLap(5, length - 5, 5, length);
+    expect(noted.seen).toBe(5);
+    expect(noted.finished).toBe(false);
+  });
+
+  it('un demi-tour sur la ligne de Monza ne valide pas le tour', () => {
+    const { car, crossed } = demiTourMonza();
+    expect(crossed).toBe(true);
+    expect(car.finished).toBe(false);
+  });
+
+  it('valide encore un tour complet après un demi-tour sur la ligne', () => {
+    const { track, lengthKm, car: cheated, crossed } = demiTourMonza();
+    expect(crossed).toBe(true);
+    expect(cheated.finished).toBe(false);
+    const dt = 1 / 120;
+    const max = topSpeed(track, lengthKm);
+    let car = cheated;
+    for (let t = 0; t < 180 && !car.finished; t += dt) {
+      const look = pointAt(track, car.s + 16 + car.speed * 0.28);
+      const aim = Math.atan2(look.y - car.y, look.x - car.x);
+      const diff = Math.atan2(Math.sin(aim - car.heading), Math.cos(aim - car.heading));
+      const steer = Math.max(-1, Math.min(1, diff / 0.42));
+      const tight = Math.abs(diff) > 0.16;
+      const brake = tight && car.speed > max * 0.4 ? 1 : 0;
+      const throttle = brake ? 0 : tight ? 0.35 : 1;
+      car = stepClm(track, car, { steer, brake, throttle }, dt, lengthKm);
+    }
+    expect(car.finished).toBe(true);
+  });
+
   it('accélère sur l’asphalte, freine, et perd de la vitesse dans l’herbe', () => {
     const track = trackFromSvg(STRAIGHT)!;
     const max = topSpeed(track);
@@ -546,4 +579,57 @@ describe('épingle du Fairmont', () => {
 function alongTrack(from: number, to: number, length: number): number {
   const delta = Math.abs(from - to);
   return Math.min(delta, length - delta);
+}
+
+function headingDelta(from: number, to: number): number {
+  return Math.atan2(Math.sin(to - from), Math.cos(to - from));
+}
+
+/** Monza réel : élan, demi-tour, ligne à l’envers, second demi-tour, puis 12 s à fond. */
+function demiTourMonza() {
+  const dir = path.join(process.cwd(), 'lib/circuits/2026');
+  const svg = readFileSync(path.join(dir, '13-monza.svg'), 'utf8');
+  const profile = (JSON.parse(readFileSync(path.join(dir, 'elevation.json'), 'utf8')) as {
+    circuits: Record<string, { reverse: boolean; start: number; points: Array<[number, number]> }>;
+  }).circuits.monza;
+  const lengthKm = 5.793;
+  const drawn = orientTrack(trackFromSvg(svg)!, profile);
+  const track = fitRoad(drawn, lengthKm, (s) => profileAt(profile.points, drawn.length > 0 ? s / drawn.length : 0));
+  const dt = 1 / 120;
+  const origin = pointAt(track, 0).angle;
+  const max = topSpeed(track, lengthKm);
+  let car = createCar(track);
+  for (let t = 0; t < 0.25; t += dt) {
+    car = stepClm(track, car, { steer: 0, brake: 0, throttle: 1 }, dt, lengthKm);
+  }
+  const reversed = origin + Math.PI;
+  for (let t = 0; t < 8 && Math.abs(headingDelta(car.heading, reversed)) > 0.25; t += dt) {
+    const diff = headingDelta(car.heading, reversed);
+    const steer = Math.max(-1, Math.min(1, diff / 0.4));
+    car = stepClm(track, car, { steer, brake: car.speed > max * 0.35 ? 1 : 0, throttle: 0.4 }, dt, lengthKm);
+  }
+  let crossed = false;
+  for (let t = 0; t < 8 && !crossed; t += dt) {
+    const look = pointAt(track, car.s - 30);
+    const aim = Math.atan2(look.y - car.y, look.x - car.x);
+    const diff = headingDelta(car.heading, aim);
+    const steer = Math.max(-1, Math.min(1, diff / 0.4));
+    const prev = car.s;
+    car = stepClm(track, car, { steer, brake: 0, throttle: 1 }, dt, lengthKm);
+    const forward = (car.s - prev + track.length) % track.length;
+    if (forward > track.length * 0.5 && car.s > track.length * 0.8) crossed = true;
+  }
+  for (let t = 0; t < 8 && Math.abs(headingDelta(car.heading, origin)) > 0.3; t += dt) {
+    const diff = headingDelta(car.heading, origin);
+    const steer = Math.max(-1, Math.min(1, diff / 0.4));
+    car = stepClm(track, car, { steer, brake: car.speed > max * 0.35 ? 1 : 0.2, throttle: 0.3 }, dt, lengthKm);
+  }
+  for (let t = 0; t < 12 && !car.finished; t += dt) {
+    const look = pointAt(track, (car.s + 20) % track.length);
+    const aim = Math.atan2(look.y - car.y, look.x - car.x);
+    const diff = headingDelta(car.heading, aim);
+    const steer = Math.max(-1, Math.min(1, diff / 0.4));
+    car = stepClm(track, car, { steer, brake: 0, throttle: 1 }, dt, lengthKm);
+  }
+  return { track, lengthKm, car, crossed };
 }
