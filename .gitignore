@@ -38,6 +38,7 @@ Thumbs.db
 *.jpeg
 *.gif
 !public/photos/**/*.jpg
+!design/mockups/clm-arcade/captures/*.png
 
 # VSCode
 .vscode/
