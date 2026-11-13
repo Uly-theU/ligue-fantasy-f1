@@ -153,6 +153,74 @@ export function noteLap(prevS: number, nextS: number, seen: number, length: numb
   return { s: nextS, seen: finished || !extendsSeen ? seen : Math.max(seen, nextS), finished };
 }
 
+/** Pas de physique. La simulation n’avance que par multiples entiers de cette durée. */
+export const CLM_STEP_SECONDS = 1 / 120;
+/** Une image ne rattrape pas plus que ça : au-delà, le temps est ignoré. */
+export const CLM_MAX_FRAME_SECONDS = 0.5;
+/** 0,5 s × 120 Hz. */
+export const CLM_MAX_STEPS_PER_FRAME = 60;
+
+export type ClmFrameSteps = {
+  /** Pas entiers de 1/120 s à simuler pour cette image. */
+  steps: number;
+  /** Secondes restantes, strictement inférieures à un pas, à reporter. */
+  leftover: number;
+};
+
+/**
+ * Accumule le temps d’image et n’en rend que des pas entiers de 1/120 s.
+ * Le reliquat est reporté. Une image est plafonnée à 0,5 s, donc à 60 pas.
+ */
+export function takeClmSteps(leftover: number, frameSeconds: number): ClmFrameSteps {
+  const raw = Number.isFinite(frameSeconds) ? frameSeconds : 0;
+  const frame = Math.min(CLM_MAX_FRAME_SECONDS, Math.max(0, raw));
+  const carried = Number.isFinite(leftover) ? Math.max(0, leftover) : 0;
+  const pending = carried + frame;
+  // 1e-8 absorbe l’erreur binaire (1/120, 1/144, 0,5) sans déclencher un pas trop tôt.
+  const due = Math.max(0, Math.floor(pending * 120 + 1e-8));
+  const steps = Math.min(CLM_MAX_STEPS_PER_FRAME, due);
+  let rest = pending - due / 120;
+  if (!(rest > 1e-12)) rest = 0;
+  return { steps, leftover: rest };
+}
+
+/** Part du pas déjà écoulée depuis le dernier pas simulé, dans [0, 1]. */
+export function clmStepAlpha(leftover: number): number {
+  const alpha = leftover / CLM_STEP_SECONDS;
+  if (!Number.isFinite(alpha) || alpha <= 0) return 0;
+  return Math.min(1, alpha);
+}
+
+/**
+ * Pose affichée entre les deux derniers pas. 0 = pas précédent, 1 = dernier pas.
+ * L’abscisse suit le sens de la marche quand le pas franchit la ligne.
+ */
+export function interpolateClmPose(
+  previous: ClmCar,
+  current: ClmCar,
+  leftover: number,
+  length = 0,
+): Pick<ClmCar, 'x' | 'y' | 'heading' | 's'> {
+  const alpha = clmStepAlpha(leftover);
+  let delta = current.s - previous.s;
+  if (length > 0) {
+    if (delta < -length * 0.5) delta += length;
+    else if (delta > length * 0.5) delta -= length;
+  }
+  let s = previous.s + delta * alpha;
+  if (length > 0) {
+    if (s < 0) s += length;
+    else if (s >= length) s -= length;
+  }
+  const turn = Math.atan2(Math.sin(current.heading - previous.heading), Math.cos(current.heading - previous.heading));
+  return {
+    x: previous.x + (current.x - previous.x) * alpha,
+    y: previous.y + (current.y - previous.y) * alpha,
+    heading: previous.heading + turn * alpha,
+    s,
+  };
+}
+
 export function stepClm(
   track: Track,
   car: ClmCar,

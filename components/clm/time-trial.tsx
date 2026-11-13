@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } f
 import { Button } from '@/components/ui/button';
 import { buildRecord, crossedSector, deltaAt, formatDelta, parseRecord, sampleAtTime, type LapRecord, type LapSample } from '@/lib/clm-record';
 import { biomeFor } from '@/lib/circuit-biome';
-import { createCar, crossingFraction, formatLap, rampSteer, RUNOFF_RATIO, speedKmh, steerResponse, stepClm, STREET_RUNOFF_RATIO, topSpeed, type ClmCar } from '@/lib/clm';
+import { CLM_STEP_SECONDS, clmStepAlpha, createCar, crossingFraction, formatLap, interpolateClmPose, rampSteer, RUNOFF_RATIO, speedKmh, steerResponse, stepClm, STREET_RUNOFF_RATIO, takeClmSteps, topSpeed, type ClmCar } from '@/lib/clm';
 import { sampleElevation, type ElevationSample } from '@/lib/grade';
 import type { TrackSign } from '@/lib/circuit-places';
 import type { Track } from '@/lib/track-path';
@@ -47,6 +47,10 @@ type Hud = {
 
 type Sim = {
   car: ClmCar;
+  /** Voiture au pas précédent, pour interpoler le rendu. */
+  previous: ClmCar;
+  /** Reliquat de temps, inférieur à un pas de 1/120 s. */
+  leftover: number;
   phase: Phase;
   countStarted: number;
   raceStarted: number;
@@ -199,6 +203,8 @@ export function TimeTrial({
     const record = readRecord(circuitId);
     const sim: Sim = {
       car,
+      previous: car,
+      leftover: 0,
       phase: 'ready',
       countStarted: 0,
       raceStarted: 0,
@@ -252,33 +258,33 @@ export function TimeTrial({
         last = now;
         return;
       }
-      let pending = Math.min(0.5, (now - last) / 1000);
-      const visualDt = pending;
+      const frameSeconds = Math.min(0.5, Math.max(0, (now - last) / 1000));
       last = now;
       const keys = keysRef.current;
       const held = heldRef.current;
-      while (pending > 0) {
-        const dt = Math.min(0.05, pending);
-        pending -= dt;
-        const enter = keys.has('Enter');
-        if (enter && !sim.enterLock) {
-          if (sim.phase === 'ready') begin(sim, now);
-          else if (sim.phase === 'finished') reset(sim, track, now);
-          sim.enterLock = true;
-        }
-        if (!enter) sim.enterLock = false;
+      const enter = keys.has('Enter');
+      if (enter && !sim.enterLock) {
+        if (sim.phase === 'ready') begin(sim, now);
+        else if (sim.phase === 'finished') reset(sim, track, now);
+        sim.enterLock = true;
+      }
+      if (!enter) sim.enterLock = false;
 
-        if (sim.phase === 'countdown' && (now - sim.countStarted) / 1000 >= COUNTDOWN_SECONDS) {
-          sim.phase = 'racing';
-          sim.raceStarted = now;
-        }
-        if (sim.phase === 'ready') sim.blend = 0;
-        else sim.blend = Math.min(1, sim.blend + dt / 0.28);
+      if (sim.phase === 'countdown' && (now - sim.countStarted) / 1000 >= COUNTDOWN_SECONDS) {
+        sim.phase = 'racing';
+        sim.raceStarted = now;
+      }
+      if (sim.phase === 'ready') sim.blend = 0;
+      else sim.blend = Math.min(1, sim.blend + frameSeconds / 0.28);
 
-        if (sim.phase === 'racing') {
+      if (sim.phase === 'racing') {
+        const tick = takeClmSteps(sim.leftover, frameSeconds);
+        sim.leftover = tick.leftover;
+        const runoff = biomeFor(circuitId).walls ? STREET_RUNOFF_RATIO : RUNOFF_RATIO;
+        for (let step = 0; step < tick.steps; step += 1) {
           const wanted = (held.right || keys.has('ArrowRight') || keys.has('KeyD') ? 1 : 0)
             - (held.left || keys.has('ArrowLeft') || keys.has('KeyA') ? 1 : 0);
-          sim.steer = rampSteer(sim.steer, wanted, dt, sim.car.speed / top);
+          sim.steer = rampSteer(sim.steer, wanted, CLM_STEP_SECONDS, sim.car.speed / top);
           const steer = steerResponse(sim.steer);
           const brake = held.brake || keys.has('ArrowDown') || keys.has('KeyS') || keys.has('Space') ? 1 : 0;
           const throttle = held.throttle || keys.has('ArrowUp') || keys.has('KeyW') || keys.has('KeyZ') ? 1 : 0;
@@ -286,12 +292,13 @@ export function TimeTrial({
           const prevTime = sim.car.time;
           const prevPenalty = sim.car.penalty;
           const prevRescues = sim.car.rescues;
-          const runoff = biomeFor(circuitId).walls ? STREET_RUNOFF_RATIO : RUNOFF_RATIO;
-          sim.car = stepClm(track, sim.car, { steer, brake, throttle }, dt, lengthKm, elevation, runoff);
+          sim.previous = sim.car;
+          sim.car = stepClm(track, sim.car, { steer, brake, throttle }, CLM_STEP_SECONDS, lengthKm, elevation, runoff);
           if (sim.car.penalty > prevPenalty) sim.cut = { seconds: sim.car.penalty - prevPenalty, until: now + 2200 };
           if (sim.car.rescues > prevRescues) {
             sim.rescuedUntil = now + 2200;
             sim.camHeading = sim.car.heading;
+            sim.previous = sim.car;
           }
           rememberSample(sim, track.length);
           const sector = crossedSector(prevS, sim.car.s, track.length);
@@ -319,21 +326,27 @@ export function TimeTrial({
               sim.sector = { sector: 3, delta: sim.gap, until: now + 1600 };
             }
             sim.phase = 'finished';
+            sim.previous = sim.car;
+            sim.leftover = 0;
+            break;
           }
         }
-
-        const turn = Math.atan2(Math.sin(sim.car.heading - sim.camHeading), Math.cos(sim.car.heading - sim.camHeading));
-        sim.camHeading += turn * (1 - Math.exp(-dt * 7));
       }
-      const ghost = sim.phase === 'racing' && sim.record && sim.record.samples.length > 1
-        ? sampleAtTime(sim.record.samples, sim.car.time)
+
+      const shown = sim.phase === 'racing';
+      const pose = interpolateClmPose(sim.previous, sim.car, shown ? sim.leftover : 0, track.length);
+      const shownTime = sim.previous.time + (sim.car.time - sim.previous.time) * clmStepAlpha(shown ? sim.leftover : 0);
+      const turn = Math.atan2(Math.sin(pose.heading - sim.camHeading), Math.cos(pose.heading - sim.camHeading));
+      sim.camHeading += turn * (1 - Math.exp(-frameSeconds * 7));
+      const ghost = shown && sim.record && sim.record.samples.length > 1
+        ? sampleAtTime(sim.record.samples, shownTime)
         : null;
       view?.render({
         car: {
-          x: sim.car.x,
-          y: sim.car.y,
-          heading: sim.car.heading,
-          s: sim.car.s,
+          x: pose.x,
+          y: pose.y,
+          heading: pose.heading,
+          s: pose.s,
           speed: sim.car.speed,
           steer: sim.steer,
           brake: sim.car.brake,
@@ -345,8 +358,8 @@ export function TimeTrial({
         phase: sim.phase,
         go: sim.phase === 'racing' && now - sim.raceStarted < 500,
         view: cameraRef.current,
-      }, visualDt);
-      drawMinimap(map, track, bounds, sim);
+      }, frameSeconds);
+      drawMinimap(map, track, bounds, sim, pose, shownTime);
       tuneEngine(engineRef.current, sim, track, lengthKm);
       if (now - hudAt >= 33) {
         hudAt = now;
@@ -379,6 +392,8 @@ export function TimeTrial({
 
   function reset(sim: Sim, course: Track, now: number) {
     sim.car = createCar(course);
+    sim.previous = sim.car;
+    sim.leftover = 0;
     sim.steer = 0;
     sim.camHeading = sim.car.heading;
     sim.phase = 'countdown';
@@ -712,6 +727,8 @@ function drawMinimap(
   track: Track,
   bounds: { minX: number; minY: number; maxX: number; maxY: number },
   sim: Sim,
+  pose: { x: number; y: number },
+  time: number,
 ) {
   const dpr = Math.min(window.devicePixelRatio || 1, 2);
   const css = 128;
@@ -745,7 +762,7 @@ function drawMinimap(
   ctx.strokeStyle = "rgba(255,255,255,0.85)";
   ctx.lineWidth = track.halfWidth * 1.15;
   ctx.stroke();
-  const ghost = sim.phase === "racing" && sim.record ? sampleAtTime(sim.record.samples, sim.car.time) : null;
+  const ghost = sim.phase === "racing" && sim.record ? sampleAtTime(sim.record.samples, time) : null;
   if (ghost) {
     ctx.fillStyle = "rgba(255,255,255,0.85)";
     ctx.beginPath();
@@ -754,7 +771,7 @@ function drawMinimap(
   }
   ctx.fillStyle = "#e10600";
   ctx.beginPath();
-  ctx.arc(sim.car.x, sim.car.y, track.halfWidth * 0.55, 0, Math.PI * 2);
+  ctx.arc(pose.x, pose.y, track.halfWidth * 0.55, 0, Math.PI * 2);
   ctx.fill();
   ctx.restore();
 }
