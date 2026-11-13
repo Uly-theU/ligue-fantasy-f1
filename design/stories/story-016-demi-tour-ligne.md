@@ -2,7 +2,7 @@
 
 > **Phase** : Alpha — gate E
 > **Type** : Logic
-> **Statut** : Ready
+> **Statut** : Done
 
 ## Contexte
 
@@ -13,9 +13,9 @@
 
 ## Critères d'acceptation
 
-- [ ] `seen` n'avance que lorsque la progression va dans le sens de la marche.
-- [ ] Reculer au-delà de la ligne de départ ne change ni `seen` ni la validité du tour.
-- [ ] Un tour normal reste validé : les tests existants restent verts sans être modifiés.
+- [x] `seen` n'avance que lorsque la progression va dans le sens de la marche.
+- [x] Reculer au-delà de la ligne de départ ne change ni `seen` ni la validité du tour.
+- [x] Un tour normal reste validé : les tests existants restent verts sans être modifiés.
 
 ## Notes d'implémentation
 

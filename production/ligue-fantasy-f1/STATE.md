@@ -11,7 +11,7 @@
 ## Status
 
 - **Statut global** : On Track
-- **Progression** : portes A et D vues dans le navigateur sur un Postgres local temporaire. Healthcheck `/api/health` en 200. Score d'un GP fictif : 29 points au classement. Le second compte Supabase et le Compose restent ouverts.
+- **Progression** : portes A et D vues dans le navigateur sur un Postgres local temporaire. Healthcheck `/api/health` en 200. Score d'un GP fictif : 29 points au classement. Le second compte Supabase et le Compose restent ouverts. Contre-la-montre : stories 015 et 016 intégrées sur `fix/minijeu-revue` (`5fefdb8`). CI du merge verte, y compris types, lint et build des démos.
 - **Blockers** : clés Supabase réelles absentes. Docker n'est pas installé, le Compose n'a pas démarré. Le Postgres de cette preuve vit dans `/tmp` et ne survit pas à un redémarrage.
 - **Dernière mise à jour** : `2026-11-13`
 
@@ -50,8 +50,8 @@
 | 012 | Appel local des crons | Integration | D | In Progress | `design/stories/story-012-timers-cron.md` |
 | 013 | Livraison testée en local | Integration | D | In Progress | `design/stories/story-013-deploiement.md` |
 | 014 | Checklist de bascule, preuve en local | Config | D | In Progress | `design/stories/story-014-bascule-dns.md` |
-| 015 | Types et build du mini jeu en CI | Config | E | Ready | `design/stories/story-015-ci-types-build.md` |
-| 016 | Un demi-tour ne valide plus le tour | Logic | E | Ready | `design/stories/story-016-demi-tour-ligne.md` |
+| 015 | Types et build du mini jeu en CI | Config | E | Done | `design/stories/story-015-ci-types-build.md` |
+| 016 | Un demi-tour ne valide plus le tour | Logic | E | Done | `design/stories/story-016-demi-tour-ligne.md` |
 | 017 | Instant de franchissement interpolé | Logic | E | Ready | `design/stories/story-017-franchissement-interpole.md` |
 | 018 | Pas de simulation fixe | Logic | E | Ready | `design/stories/story-018-pas-fixe.md` |
 | 019 | Découper race-view.ts | Refactor | F | Ready | `design/stories/story-019-decoupe-race-view.md` |
@@ -88,7 +88,7 @@ Direction de l'interface du mini jeu : arcade des années 80–90, demandée le 
 | 2026-10-06 | Basculer le DNS avant le gate A déplace le 401 des crons et le roster mobile | Critique | Ouvert |
 | 2026-10-06 | Traiter un owner de ligue comme admin des résultats : le calendrier est global | Élevé | Ouvert |
 | 2026-10-06 | `qualifying_position` plafonné à 20 dans Zod, grille visée à 22 | Moyen | Ouvert |
-| 2026-11-13 | Un demi-tour sur la ligne de départ valide un tour (14 s à Monza) : aucun temps n'est comparable avant la story 016 | Critique | Ouvert |
+| 2026-11-13 | Un demi-tour sur la ligne de départ valide un tour (14 s à Monza) : aucun temps n'est comparable avant la story 016 | Critique | Traité |
 | 2026-11-13 | Le rejeu serveur peut différer du client de quelques millisecondes : le temps du serveur doit faire foi (story 023) | Moyen | Ouvert |
 
 ## Prochaines actions
@@ -96,7 +96,7 @@ Direction de l'interface du mini jeu : arcade des années 80–90, demandée le 
 1. Renseigner l'URL et la clé anon Supabase dans un `.env` lu par Compose, puis `docker compose up -d` sur le VPS.
 2. Créer un second compte (Google ou lien magique) et vérifier la ligne `profiles`.
 3. Ne pas changer le DNS.
-4. Contre-la-montre : partir de `fix/minijeu-revue` ; lancer 015 et 016 dans des worktrees distincts, avec les maquettes de 026 en parallèle.
+4. Contre-la-montre : 015 et 016 sont sur `fix/minijeu-revue`. Enchaîner 017, puis 018. La tranche maquettes de 026 continue en parallèle. Le gate E reste ouvert.
 
 ## Journal
 
@@ -115,4 +115,5 @@ Direction de l'interface du mini jeu : arcade des années 80–90, demandée le 
 | 2026-10-20 | Porte A : verrou à lock_time et gel de chaque équipe active. Porte D : enregistrement d'alignement, copie d'invitation, compte à rebours, menu mobile, pseudo généré. Healthcheck sur `/api/health`. |
 | 2026-11-13 | Revue du contre-la-montre. Corrections sur `fix/minijeu-revue` : script de décor, seuil de calage, démos, croisement de Monza. 272 tests verts, 0 erreur de types. Stories 015 à 025 écrites, gates E, F, G ouverts. |
 | 2026-11-13 | Plan Cursor précisé : CI, chrono et préparation UI en parallèle ; réservation des fichiers partagés et intégration commune. Direction arcade 80–90 et story 026 ajoutées. Implémentation non démarrée. |
+| 2026-11-13 | Stories 015 et 016 mergées sur `fix/minijeu-revue`. CI https://github.com/Uly-theU/ligue-fantasy-f1/actions/runs/43411612065 verte. Gate E encore ouvert (017, 018). |
 | 2026-10-20 | Preuve locale : Postgres temporaire, seed 22 pilotes / 24 GP, parcours navigateur (ligue, draft, équipe, classement 29 pts). Cron scores 200, ingestion 401 sans secret. |
