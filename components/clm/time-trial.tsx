@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } f
 import { Button } from '@/components/ui/button';
 import { buildRecord, crossedSector, deltaAt, formatDelta, parseRecord, sampleAtTime, type LapRecord, type LapSample } from '@/lib/clm-record';
 import { biomeFor } from '@/lib/circuit-biome';
-import { createCar, formatLap, rampSteer, RUNOFF_RATIO, speedKmh, steerResponse, stepClm, STREET_RUNOFF_RATIO, topSpeed, type ClmCar } from '@/lib/clm';
+import { createCar, crossingFraction, formatLap, rampSteer, RUNOFF_RATIO, speedKmh, steerResponse, stepClm, STREET_RUNOFF_RATIO, topSpeed, type ClmCar } from '@/lib/clm';
 import { sampleElevation, type ElevationSample } from '@/lib/grade';
 import type { TrackSign } from '@/lib/circuit-places';
 import type { Track } from '@/lib/track-path';
@@ -283,6 +283,7 @@ export function TimeTrial({
           const brake = held.brake || keys.has('ArrowDown') || keys.has('KeyS') || keys.has('Space') ? 1 : 0;
           const throttle = held.throttle || keys.has('ArrowUp') || keys.has('KeyW') || keys.has('KeyZ') ? 1 : 0;
           const prevS = sim.car.s;
+          const prevTime = sim.car.time;
           const prevPenalty = sim.car.penalty;
           const prevRescues = sim.car.rescues;
           const runoff = biomeFor(circuitId).walls ? STREET_RUNOFF_RATIO : RUNOFF_RATIO;
@@ -295,7 +296,11 @@ export function TimeTrial({
           rememberSample(sim, track.length);
           const sector = crossedSector(prevS, sim.car.s, track.length);
           if (sector && sim.record?.sectors) {
-            sim.sector = { sector, delta: sim.car.time - sim.record.sectors[sector - 1], until: now + 1600 };
+            const fraction = crossingFraction(prevS, sim.car.s, (sector * track.length) / 3, track.length);
+            const penalty = sim.car.penalty - prevPenalty;
+            const driven = sim.car.time - prevTime - penalty;
+            const at = prevTime + (fraction == null ? driven : fraction * driven) + penalty;
+            sim.sector = { sector, delta: at - sim.record.sectors[sector - 1], until: now + 1600 };
           }
           sim.delta = sim.record && sim.record.samples.length > 1 ? deltaAt(sim.record, sim.car.s, sim.car.time) : null;
           if (sim.car.finished) {

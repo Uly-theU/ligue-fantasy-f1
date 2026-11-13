@@ -367,6 +367,10 @@ function integrate(
   let offPath = car.offPath;
   let penalty = car.penalty;
   let time = car.time + dt;
+  if (finished) {
+    const fraction = crossingFraction(car.s, s, track.length, track.length);
+    if (fraction != null) time = car.time + fraction * dt;
+  }
   if (offTrack) {
     if (offFrom == null) {
       offFrom = car.s;
@@ -459,6 +463,19 @@ function wrapForward(from: number, to: number, length: number): number {
   let delta = (to - from) % length;
   if (delta < 0) delta += length;
   return delta;
+}
+
+/**
+ * Part du pas déjà parcourue quand `mark` est franchi, dans le sens de la marche.
+ * La ligne d'arrivée est l'abscisse `length`. Null si le pas ne la traverse pas vers l'avant.
+ */
+export function crossingFraction(prevS: number, nextS: number, mark: number, length: number): number | null {
+  if (!(length > 0)) return null;
+  const advance = wrapForward(prevS, nextS, length);
+  if (!(advance > 0) || advance >= length - advance) return null;
+  const before = wrapForward(prevS, mark, length);
+  if (!(before > 0) || before > advance) return null;
+  return before / advance;
 }
 
 function alongTrack(a: number, b: number, length: number): number {

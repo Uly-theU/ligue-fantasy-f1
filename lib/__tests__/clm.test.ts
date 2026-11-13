@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { TOP_SPEED_KMH, createCar, cutPenalty, fitRoad, formatLap, nextRaceFrom, noteLap, rampSteer, RUNOFF_RATIO, speedKmh, stepClm, STREET_RUNOFF_RATIO, topSpeed } from '@/lib/clm';
+import { TOP_SPEED_KMH, createCar, crossingFraction, cutPenalty, fitRoad, formatLap, nextRaceFrom, noteLap, rampSteer, RUNOFF_RATIO, speedKmh, stepClm, STREET_RUNOFF_RATIO, topSpeed } from '@/lib/clm';
 import { profileAt } from '@/lib/grade';
 import { narrowAt, narrowTrack, nearestTrack, orientTrack, paintedHalf, paintedHalfAt, pointAt, projectTrack, trackFromSvg } from '@/lib/track-path';
 
@@ -464,6 +464,49 @@ describe('contre-la-montre', () => {
     for (let t = 0; t < 1.5; t += dt) car = stepClm(track, car, { steer: 0, brake: 0, throttle: 1 }, dt);
     expect(car.vx).toBeGreaterThan(max * 0.06);
   });
+
+  it('interpole la ligne au quart du pas à vitesse constante', () => {
+    const dt = 1 / 120;
+    const { track, max } = ligneAuMilieu();
+    const before = voitureAvantLigne(track, max, 0.25 * max * dt);
+    const car = stepClm(track, before, { steer: 0, brake: 0, throttle: 1 }, dt);
+    expect(car.finished).toBe(true);
+    expect(Math.abs(car.time - (before.time + 0.25 * dt))).toBeLessThanOrEqual(1e-6);
+  });
+
+  it('rapproche les temps finaux à 1/120 s et à 1/240 s', () => {
+    const { track, max } = ligneAuMilieu();
+    const before = voitureAvantLigne(track, max, 0.25 * max * (1 / 120));
+    const coarse = jusquaLaLigne(track, before, 1 / 120);
+    const fine = jusquaLaLigne(track, before, 1 / 240);
+    expect(coarse.finished).toBe(true);
+    expect(fine.finished).toBe(true);
+    expect(Math.abs(coarse.time - fine.time)).toBeLessThan(0.001);
+  });
+
+  it('ajoute toute la pénalité de coupe au temps interpolé', () => {
+    const dt = 1 / 120;
+    const { track, max } = ligneAuMilieu();
+    const offFrom = track.length - 100;
+    const before = voitureAvantLigne(track, max, 0.25 * max * dt, {
+      offTrack: true,
+      offFrom,
+      offPath: 0,
+    });
+    const car = stepClm(track, before, { steer: 0, brake: 0, throttle: 1 }, dt);
+    const gained = (car.s - offFrom + track.length) % track.length;
+    const cut = cutPenalty(gained, 0, track, max);
+    expect(car.finished).toBe(true);
+    expect(cut).toBeGreaterThan(1);
+    expect(car.penalty).toBe(cut);
+    expect(Math.abs(car.time - (before.time + 0.25 * dt + cut))).toBeLessThanOrEqual(1e-6);
+  });
+
+  it('donne la fraction du pas pour les deux secteurs', () => {
+    const length = 300;
+    expect(crossingFraction(90, 130, length / 3, length)).toBeCloseTo(0.25, 6);
+    expect(crossingFraction(190, 230, (2 * length) / 3, length)).toBeCloseTo(0.25, 6);
+  });
 });
 
 describe('largeur resserrée', () => {
@@ -575,6 +618,42 @@ describe('épingle du Fairmont', () => {
     expect(car.s / track.length).toBeGreaterThan(0.46);
   });
 });
+
+/** La ligne coupe une longue droite, loin des angles. */
+function ligneAuMilieu() {
+  const track = trackFromSvg('<svg xmlns="http://www.w3.org/2000/svg"><path stroke-width="20" d="M1000 0 H2000 V200 H0 V0 H1000 Z"/></svg>')!;
+  return { track, max: topSpeed(track) };
+}
+
+function voitureAvantLigne(
+  track: ReturnType<typeof ligneAuMilieu>['track'],
+  max: number,
+  distance: number,
+  patch: Partial<ReturnType<typeof createCar>> = {},
+) {
+  const spot = pointAt(track, track.length - distance);
+  return {
+    ...createCar(track),
+    x: spot.x,
+    y: spot.y,
+    s: spot.s,
+    seen: track.length * 0.95,
+    heading: spot.angle,
+    speed: max,
+    vx: Math.cos(spot.angle) * max,
+    vy: Math.sin(spot.angle) * max,
+    time: 12.5,
+    ...patch,
+  };
+}
+
+function jusquaLaLigne(track: ReturnType<typeof ligneAuMilieu>['track'], car: ReturnType<typeof createCar>, dt: number) {
+  let state = car;
+  for (let n = 0; n < 8 && !state.finished; n += 1) {
+    state = stepClm(track, state, { steer: 0, brake: 0, throttle: 1 }, dt);
+  }
+  return state;
+}
 
 function alongTrack(from: number, to: number, length: number): number {
   const delta = Math.abs(from - to);
