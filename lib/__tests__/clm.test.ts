@@ -500,12 +500,22 @@ describe('contre-la-montre', () => {
     expect(cut).toBeGreaterThan(1);
     expect(car.penalty).toBe(cut);
     expect(Math.abs(car.time - (before.time + 0.25 * dt + cut))).toBeLessThanOrEqual(1e-6);
+    expect(Math.abs(car.time - (before.time + 0.25 * dt + 0.25 * cut))).toBeGreaterThan(0.5);
   });
 
-  it('donne la fraction du pas pour les deux secteurs', () => {
+  it('donne la même fraction aux deux secteurs et à la ligne', () => {
     const length = 300;
-    expect(crossingFraction(90, 130, length / 3, length)).toBeCloseTo(0.25, 6);
-    expect(crossingFraction(190, 230, (2 * length) / 3, length)).toBeCloseTo(0.25, 6);
+    const advance = 40;
+    const gap = 10;
+    const sector1 = crossingFraction(length / 3 - gap, length / 3 - gap + advance, length / 3, length);
+    const sector2 = crossingFraction((2 * length) / 3 - gap, (2 * length) / 3 - gap + advance, (2 * length) / 3, length);
+    const line = crossingFraction(length - gap, advance - gap, length, length);
+    expect(sector1).toBeCloseTo(gap / advance, 6);
+    expect(sector2).toBeCloseTo(gap / advance, 6);
+    expect(line).toBeCloseTo(gap / advance, 6);
+    expect(sector1).toBe(sector2);
+    expect(line).toBe(sector1);
+    expect(crossingFraction(length / 3 + 5, length / 3 - 5, length / 3, length)).toBeNull();
   });
 });
 
