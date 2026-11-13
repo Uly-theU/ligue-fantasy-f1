@@ -12,7 +12,7 @@
 
 | Métrique | Valeur |
 |----------|--------|
-| Sessions totales | 13 |
+| Sessions totales | 14 |
 | Date première session | 2026-10-06 |
 | Date dernière session | 2026-11-13 |
 
@@ -33,6 +33,7 @@
 | 11 | 2026-11-13 | story 026, tranche 1 | PR #6 mergée (`5127043`). CI verte. Maquettes desktop et mobile, composants dans `components/clm/arcade/`. | La story n'est pas fermée. Le HUD attend 018, 020 et 022. Le classement attend 024. Affronter reste non branché. | Story 018, puis intégration du HUD |
 | 12 | 2026-11-13 | story 018 | PR #7 mergée (`fca26c5`). 281 tests, CI verte. | `takeClmSteps` borne une image à 60 pas de 1/120 s. La pose affichée est interpolée. Démo Monaco fluide jusqu'à Sainte-Dévote, tour non bouclé. Gate E ouvert tant que deux tours complets ne sont pas joués. | Tours complets Monaco et un circuit rapide, puis fermeture de E |
 | 13 | 2026-11-13 | fermeture gate E | Tours scriptés Monaco et Monza, à 60 Hz et 144 Hz. | Monaco 1:00.644 sans pénalité. Monza 1:12.923 avec 1,6 s de coupe. Les deux cadences donnent le même `ClmCar`. Ce n'est pas une conduite à la main. | Stories 019 et 022 |
+| 14 | 2026-11-13 | story 022 | PR #8 mergée (`fcde8e4`). CI verte au second passage. | Une entrée par pas de 1/120 s, rejouée à l'identique. 11 973 octets pour 90 s au clavier. Le premier passage CI échouait : Node 20 refusait un ArrayBuffer dans le compresseur. | Story 023. 020 après 019 |
 
 ## Consommation par phase
 
