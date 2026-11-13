@@ -869,14 +869,12 @@ export class RaceView {
   /** Glissières ou murs au bord du mur souple, puis le décor du circuit, hors piste. */
   private buildSurroundings() {
     const mapped = surroundingsFor(this.circuitId);
-    const trusted = mapped != null && mapped.fit_m <= 42;
-    if (trusted && mapped) {
+    if (mapped) {
       this.buildWater(mapped);
       this.buildHistoric(mapped.loops);
     }
     this.buildRails();
-    const buildings = trusted && mapped != null && mapped.stands.length + mapped.blocks.length > 0;
-    if (buildings && mapped) this.plantFootprints(mapped.stands, mapped.blocks);
+    if (mapped && mapped.stands.length + mapped.blocks.length > 0) this.plantFootprints(mapped.stands, mapped.blocks);
     else {
       const pit = planPit(this.track, this.half, this.biome.walls);
       if (pit.box) this.plantPlaced([pit.box], 'pit');
@@ -923,7 +921,6 @@ export class RaceView {
       nz,
       angle: spot.angle,
       s: spot.s,
-      clear: clearance(this.track, x, z, s),
     };
   }
 
@@ -1110,55 +1107,7 @@ export class RaceView {
     return low + Math.max(0.14, this.roadLift);
   }
 
-  /** Plans d'eau et bande de mer, posés à plat, jamais sur l'asphalte. */
-  private coastLine(shore: number[][]): number[][] {
-    const min = 18 * this.meter;
-    const line: number[][] = [];
-    for (const pt of shore) {
-      const prev = line[line.length - 1];
-      if (!prev || Math.hypot(pt[0] - prev[0], pt[1] - prev[1]) >= min) line.push(pt);
-    }
-    return line;
-  }
-
-  /** Le rivage avance vers la mer et s'arrête avant de toucher le circuit de l'autre côté du port. */
-  private coastFrame(pt: number[], maxReach: number): { ix: number; iy: number; ox: number; oy: number; nx: number; ny: number } | null {
-    const near = nearestCenter(this.track, pt[0], pt[1]);
-    if (near.distance > maxReach) return null;
-    const spot = pointAt(this.track, near.s);
-    const step = 8 * this.meter;
-    let bestX = 0;
-    let bestY = 0;
-    let best = 0;
-    for (let angle = 0; angle < Math.PI * 2; angle += Math.PI / 12) {
-      const dx = Math.cos(angle);
-      const dy = Math.sin(angle);
-      const away = (pt[0] + dx - spot.x) * dx + (pt[1] + dy - spot.y) * dy;
-      if (away > best) {
-        best = away;
-        bestX = dx;
-        bestY = dy;
-      }
-    }
-    if (best <= 0) return null;
-    const shove = Math.max(0, this.half * 0.45 - paintClearance(this.track, pt[0], pt[1]));
-    const ix = pt[0] + bestX * shove;
-    const iy = pt[1] + bestY * shove;
-    if (paintClearance(this.track, ix, iy) < 0) return null;
-    let reach = maxReach;
-    for (let dist = shove + step; dist < maxReach; dist += step) {
-      const hit = nearestCenter(this.track, pt[0] + bestX * dist, pt[1] + bestY * dist);
-      const along = Math.abs(hit.s - near.s);
-      const around = Math.min(along, this.track.length - along);
-      if (around > this.track.length * 0.04 && hit.distance < this.half * 1.5) {
-        reach = Math.max(shove + step, dist - step);
-        break;
-      }
-    }
-    if (reach < shove + 16 * this.meter) return null;
-    return { ix, iy, ox: pt[0] + bestX * reach, oy: pt[1] + bestY * reach, nx: bestX, ny: bestY };
-  }
-
+  /** Plans d'eau et nappes de mer, posés à plat, jamais sur l'asphalte. */
   private buildWater(scene: CircuitSurroundings) {
     const positions: number[] = [];
     const addRing = (ring: number[][]) => {
@@ -1189,20 +1138,6 @@ export class RaceView {
     };
     for (const ring of scene.waters) addRing(ring);
     for (const ring of scene.sheets) addRing(ring);
-    const reach = 220 * this.meter;
-    for (const shore of scene.shores) {
-      const line = this.coastLine(shore);
-      const frames = line.map((pt) => this.coastFrame(pt, reach));
-      for (let i = 0; i < line.length - 1; i += 1) {
-        const a = frames[i];
-        const b = frames[i + 1];
-        if (!a || !b) continue;
-        if (a.nx * b.nx + a.ny * b.ny < 0.5) continue;
-        const height = this.waterLevel([[a.ix, a.iy], [b.ix, b.iy], [a.ox, a.oy], [b.ox, b.oy]]);
-        positions.push(a.ix, height, a.iy, b.ix, height, b.iy, a.ox, height, a.oy);
-        positions.push(b.ix, height, b.iy, b.ox, height, b.oy, a.ox, height, a.oy);
-      }
-    }
     if (positions.length < 9) return;
     const geometry = this.keep(new THREE.BufferGeometry());
     geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
@@ -1234,7 +1169,7 @@ export class RaceView {
       const count = samples.length;
       if (count < 8) continue;
       const info = this.ovalFrames(samples);
-      const bridged = info.map((frame) => frame.delta > 1.05 && frame.dist < frame.painted + halfW + 12 * this.meter);
+      const bridged = info.map((frame) => this.crossesRoad(frame));
       const outsideLeft = info.reduce((sum, frame) => sum + frame.turn, 0) < 0;
 
       const deck: Ribbon = { positions: [], indices: [] };
@@ -1261,6 +1196,11 @@ export class RaceView {
       this.addConcrete(lip.positions, lip.indices, '#2c2a28');
       this.addConcrete(skirt.positions, skirt.indices, '#5e5952');
     }
+  }
+
+  /** L'anneau coupe franchement la piste actuelle ici : le tablier passe au-dessus, la piste dans la cuvette. */
+  private crossesRoad(frame: OvalFrame): boolean {
+    return frame.delta > 1.05 && frame.dist < frame.painted + 18 * this.meter;
   }
 
   /**
@@ -1452,41 +1392,28 @@ export class RaceView {
     return drop;
   }
 
-  /** Abscisses où l'ancien anneau coupe franchement la piste actuelle. */
+  /** Abscisses où l'ancien anneau coupe franchement la piste actuelle, lues sur les mêmes trames que le tablier. */
   private findUnderpasses(): number[] {
     const mapped = surroundingsFor(this.circuitId);
-    if (!mapped || mapped.fit_m > 42) return [];
+    if (!mapped) return [];
     const found: number[] = [];
     for (const loop of mapped.loops) {
       const samples = resampleLoop(loop, Math.max(this.half * 0.35, 1.2));
-      const count = samples.length;
-      const hit = samples.map((curr, index) => {
-        const next = samples[(index + 1) % count];
-        const ahead = Math.atan2(next.y - curr.y, next.x - curr.x);
-        const near = nearestCenter(this.track, curr.x, curr.y);
-        const spot = pointAt(this.track, near.s);
-        let delta = Math.abs(ahead - spot.angle) % Math.PI;
-        if (delta > Math.PI / 2) delta = Math.PI - delta;
-        const painted = paintedHalfAt(this.track, near.s);
-        return delta > 1.05 && near.distance < painted + 18 * this.meter ? near.s : -1;
-      });
+      if (samples.length < 8) continue;
+      const frames = this.ovalFrames(samples);
+      const count = frames.length;
       const seen = new Array<boolean>(count).fill(false);
       for (let start = 0; start < count; start += 1) {
-        if (hit[start] < 0 || seen[start]) continue;
-        let best = hit[start];
-        let bestDist = Infinity;
+        if (seen[start] || !this.crossesRoad(frames[start])) continue;
+        let best = frames[start];
         let cursor = start;
-        while (hit[cursor] >= 0 && !seen[cursor]) {
+        while (!seen[cursor] && this.crossesRoad(frames[cursor])) {
           seen[cursor] = true;
-          const near = nearestCenter(this.track, samples[cursor].x, samples[cursor].y);
-          if (near.distance < bestDist) {
-            bestDist = near.distance;
-            best = near.s;
-          }
+          if (frames[cursor].dist < best.dist) best = frames[cursor];
           cursor = (cursor + 1) % count;
           if (cursor === start) break;
         }
-        found.push(best);
+        found.push(best.s);
       }
     }
     return found;
@@ -1881,7 +1808,6 @@ type Beside = {
   nz: number;
   angle: number;
   s: number;
-  clear: number;
 };
 
 type Scatter = {

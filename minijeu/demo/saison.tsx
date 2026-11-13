@@ -1,16 +1,13 @@
-import { useMemo, useState, type ReactNode } from 'react';
+import { useMemo, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { TimeTrial } from '@/components/clm/time-trial';
 import { Button } from '@/components/ui/button';
-import { trackSigns } from '@/lib/circuit-places';
-import { bankTrack } from '@/lib/circuit-banking';
-import { fitRoad, formatLap, metersPerUnit } from '@/lib/clm';
-import { parseRecord, type LapRecord } from '@/lib/clm-record';
-import { profileAt, smoothElevation, type ElevationSample } from '@/lib/grade';
-import { orientTrack, trackFromSvg } from '@/lib/track-path';
-import manifestFile from '../../lib/circuits/2026/manifest.json';
-import elevationFile from '../../lib/circuits/2026/elevation.json';
-import cornersFile from '../../lib/circuits/2026/corners.json';
+import { formatLap } from '@/lib/clm';
+import type { LapRecord } from '@/lib/clm-record';
+import {
+  Credits, Options, ScreenTitle, SEASON, Shell, describeCircuit, eraseRecord, formatKm, prepare, readCamera, readRecord,
+  saveCamera, sectorSplits, type Camera, type Circuit, type Screen,
+} from './shared';
 import melbourne from '../../lib/circuits/2026/01-melbourne.svg';
 import shanghai from '../../lib/circuits/2026/02-shanghai.svg';
 import suzuka from '../../lib/circuits/2026/03-suzuka.svg';
@@ -34,8 +31,6 @@ import interlagos from '../../lib/circuits/2026/20-interlagos.svg';
 import lasVegas from '../../lib/circuits/2026/21-las-vegas.svg';
 import lusail from '../../lib/circuits/2026/22-lusail.svg';
 import yasMarina from '../../lib/circuits/2026/23-yas-marina.svg';
-
-const CAMERA_KEY = 'clm-camera';
 
 const TRACKS: Record<string, string> = {
   melbourne,
@@ -63,68 +58,19 @@ const TRACKS: Record<string, string> = {
   'yas-marina': yasMarina,
 };
 
-type Screen = 'menu' | 'race' | 'times' | 'options';
-type Camera = 'chase' | 'cockpit';
-
-type Circuit = {
-  round: number;
-  date: string;
-  circuit_id: string;
-  full_name: string;
-  length_km: number;
-  turns: number;
-  direction: 'CLOCKWISE' | 'ANTI_CLOCKWISE';
-};
-
-type ElevationFile = {
-  circuits: Record<string, {
-    reverse: boolean;
-    start: number;
-    range_m: number;
-    points: Array<[number, number]>;
-  }>;
-};
-
-type CornersFile = {
-  circuits: Record<string, { corners: Array<{ number: number; at: number }> }>;
-};
-
-const SEASON = manifestFile as Circuit[];
-const ELEVATION = elevationFile as ElevationFile;
-const CORNERS = cornersFile as CornersFile;
-
-const DIRECTION: Record<Circuit['direction'], string> = {
-  CLOCKWISE: 'Sens horaire',
-  ANTI_CLOCKWISE: 'Sens anti-horaire',
-};
-
-function recordKey(circuitId: string): string {
-  return `clm-record:v5:${circuitId}`;
-}
-
-function readCamera(): Camera {
-  try {
-    return localStorage.getItem(CAMERA_KEY) === 'cockpit' ? 'cockpit' : 'chase';
-  } catch {
-    return 'chase';
-  }
-}
-
-function readRecord(circuitId: string): LapRecord | null {
-  try {
-    return parseRecord(localStorage.getItem(recordKey(circuitId)));
-  } catch {
-    return null;
-  }
-}
+const CIRCUIT_PARAM = 'circuit';
 
 function readChoice(): string | null {
-  const raw = new URLSearchParams(window.location.search).get('circuit');
+  const raw = new URLSearchParams(window.location.search).get(CIRCUIT_PARAM);
   return raw && SEASON.some((circuit) => circuit.circuit_id === raw) ? raw : null;
 }
 
-function formatKm(km: number): string {
-  return `${km.toFixed(3).replace('.', ',')} km`;
+/** L'adresse suit le circuit ouvert : la recharger ou la partager rouvre la même course. */
+function writeChoice(id: string | null) {
+  const url = new URL(window.location.href);
+  if (id) url.searchParams.set(CIRCUIT_PARAM, id);
+  else url.searchParams.delete(CIRCUIT_PARAM);
+  window.history.replaceState(null, '', url);
 }
 
 function formatDate(iso: string): string {
@@ -137,25 +83,21 @@ function formatDate(iso: string): string {
 }
 
 export function Demo() {
-  const [screen, setScreen] = useState<Screen>('menu');
-  const [camera, setCamera] = useState<Camera>(readCamera);
   const [circuitId, setCircuitId] = useState<string | null>(readChoice);
+  const [screen, setScreen] = useState<Screen>(() => (circuitId ? 'race' : 'menu'));
+  const [camera, setCamera] = useState<Camera>(readCamera);
   const [records, setRecords] = useState<Record<string, LapRecord | null>>({});
 
   const circuit = SEASON.find((entry) => entry.circuit_id === circuitId) ?? null;
 
-  const chooseCamera = (next: Camera) => {
-    setCamera(next);
-    try {
-      localStorage.setItem(CAMERA_KEY, next);
-    } catch { /* stockage privé */ }
+  const toMenu = () => {
+    writeChoice(null);
+    setScreen('menu');
   };
 
   const openRace = (id: string) => {
     setCircuitId(id);
-    const url = new URL(window.location.href);
-    url.searchParams.set('circuit', id);
-    window.history.replaceState(null, '', url);
+    writeChoice(id);
     setScreen('race');
   };
 
@@ -167,16 +109,14 @@ export function Demo() {
   };
 
   const clearRecord = (id: string) => {
-    try {
-      localStorage.removeItem(recordKey(id));
-    } catch { /* stockage privé */ }
+    eraseRecord(id);
     setRecords((current) => ({ ...current, [id]: null }));
   };
 
   if (screen === 'race' && circuit) {
     return (
       <Shell>
-        <Race circuit={circuit} camera={camera} onMenu={() => setScreen('menu')} />
+        <Race circuit={circuit} camera={camera} onMenu={toMenu} />
       </Shell>
     );
   }
@@ -184,15 +124,17 @@ export function Demo() {
   if (screen === 'times') {
     return (
       <Shell>
-        <ScreenTitle title="Temps enregistrés" onBack={() => setScreen('menu')} />
+        <ScreenTitle title="Temps enregistrés" back="Circuits" onBack={toMenu} />
         <ul className="space-y-2">
           {SEASON.map((entry) => {
             const record = records[entry.circuit_id];
+            const splits = record ? sectorSplits(record) : null;
             return (
               <li key={entry.circuit_id} className="flex items-center justify-between gap-3 rounded-2xl border border-white/15 bg-white/5 px-4 py-3">
                 <div>
                   <p className="text-sm font-medium">R{entry.round} · {entry.full_name}</p>
                   <p className="font-mono text-lg tabular-nums">{record ? formatLap(record.time) : '—'}</p>
+                  {splits && <p className="font-mono text-xs tabular-nums text-white/60">{splits.join(' · ')}</p>}
                 </div>
                 {record && (
                   <Button type="button" variant="outline" size="sm" onClick={() => clearRecord(entry.circuit_id)}>Effacer</Button>
@@ -208,15 +150,15 @@ export function Demo() {
   if (screen === 'options') {
     return (
       <Shell>
-        <ScreenTitle title="Options" onBack={() => setScreen('menu')} />
-        <fieldset className="space-y-3">
-          <legend className="mb-3 text-sm text-muted-foreground">Vue</legend>
-          <Choice pressed={camera === 'chase'} onClick={() => chooseCamera('chase')}>Poursuite</Choice>
-          <Choice pressed={camera === 'cockpit'} onClick={() => chooseCamera('cockpit')}>Cockpit</Choice>
-        </fieldset>
-        <p className="mt-6 text-sm text-muted-foreground">
-          Haut, W ou Z pour accélérer. Flèches ou A et D pour tourner. Espace pour freiner. C change la vue pendant le tour.
-        </p>
+        <Options
+          camera={camera}
+          onCamera={(next) => {
+            setCamera(next);
+            saveCamera(next);
+          }}
+          back="Circuits"
+          onBack={toMenu}
+        />
       </Shell>
     );
   }
@@ -241,7 +183,7 @@ export function Demo() {
               </span>
               <span className="shrink-0 text-right text-xs text-white/70">
                 {formatKm(entry.length_km)}
-                <span className="mt-1 block">{entry.turns} virages · {DIRECTION[entry.direction]}</span>
+                <span className="mt-1 block">{describeCircuit(entry)}</span>
               </span>
             </Button>
           </li>
@@ -251,20 +193,18 @@ export function Demo() {
         <Button type="button" variant="outline" onClick={openTimes}>Temps enregistrés</Button>
         <Button type="button" variant="outline" onClick={() => setScreen('options')}>Options</Button>
       </div>
-      <p className="mt-8 text-center text-[11px] text-white/40">
-        Tracés F1DB, CC BY 4.0 · Altitudes Copernicus DEM via Open-Meteo, CC BY 4.0
-      </p>
+      <Credits plural />
     </Shell>
   );
 }
 
 function Race({ circuit, camera, onMenu }: { circuit: Circuit; camera: Camera; onMenu: () => void }) {
-  const prepared = useMemo(() => prepare(circuit), [circuit]);
+  const prepared = useMemo(() => prepare(circuit, TRACKS[circuit.circuit_id]), [circuit]);
 
   if (!prepared) {
     return (
       <>
-        <ScreenTitle title={circuit.full_name} onBack={onMenu} />
+        <ScreenTitle title={circuit.full_name} back="Circuits" onBack={onMenu} />
         <p className="text-center text-lg">Ce tracé ne peut pas être parcouru.</p>
       </>
     );
@@ -288,45 +228,6 @@ function Race({ circuit, camera, onMenu }: { circuit: Circuit; camera: Camera; o
         signs={prepared.signs}
       />
     </>
-  );
-}
-
-function prepare(circuit: Circuit) {
-  const svg = TRACKS[circuit.circuit_id];
-  const elevation = ELEVATION.circuits[circuit.circuit_id];
-  const corners = CORNERS.circuits[circuit.circuit_id]?.corners ?? [];
-  const drawn = svg ? trackFromSvg(svg) : null;
-  if (!drawn || !elevation) return null;
-  const raced = orientTrack(drawn, elevation);
-  const heightAt = (s: number) => profileAt(elevation.points, raced.length > 0 ? s / raced.length : 0);
-  const track = bankTrack(fitRoad(raced, circuit.length_km, heightAt), circuit.circuit_id, corners);
-  const raw = elevation.points.map(([fraction, z]) => ({ s: fraction * track.length, z }));
-  const samples: ElevationSample[] = smoothElevation(raw, track.length, metersPerUnit(track, circuit.length_km), track.closed);
-  return { track, samples, signs: trackSigns(circuit.circuit_id, corners) };
-}
-
-function Shell({ children }: { children: ReactNode }) {
-  return (
-    <main className="mx-auto min-h-screen max-w-5xl px-4 py-8">
-      {children}
-    </main>
-  );
-}
-
-function ScreenTitle({ title, onBack }: { title: string; onBack: () => void }) {
-  return (
-    <div className="mb-6 flex items-center justify-between gap-3">
-      <h1 className="text-3xl font-bold">{title}</h1>
-      <Button type="button" variant="outline" onClick={onBack}>Circuits</Button>
-    </div>
-  );
-}
-
-function Choice({ pressed, onClick, children }: { pressed: boolean; onClick: () => void; children: ReactNode }) {
-  return (
-    <Button type="button" variant={pressed ? 'default' : 'outline'} aria-pressed={pressed} className="w-full" onClick={onClick}>
-      {children}
-    </Button>
   );
 }
 

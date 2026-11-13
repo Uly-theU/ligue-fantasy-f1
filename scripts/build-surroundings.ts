@@ -1,10 +1,12 @@
 /**
  * Cale les plans d'eau, les tribunes et les anciens anneaux OSM sur le tracé de chaque circuit.
- * Usage : tsx scripts/build-surroundings.ts [circuit_id]
+ * Usage : tsx scripts/build-surroundings.ts [circuit_id] [--decor]
+ * Tribunes, immeubles et anneaux déjà relevés sont conservés ; --decor les relève à nouveau.
  */
 import { readFileSync, writeFileSync, writeSync } from 'node:fs';
 import path from 'node:path';
 import { biomeFor } from '../lib/circuit-biome';
+import { MAX_FIT_M } from '../lib/circuit-surroundings';
 import type { Footprint } from '../lib/circuit-scenery';
 import { fitRoad, metersPerUnit } from '../lib/clm';
 import { profileAt } from '../lib/grade';
@@ -47,7 +49,9 @@ type Way = { id: number; tags: Record<string, string>; pts: Ll[] };
 type ManifestEntry = { circuit_id: string; file: string; length_km: number };
 type Profile = { reverse: boolean; start: number; points: Array<[number, number]> };
 
-const only = process.argv[2];
+const args = process.argv.slice(2);
+const refreshDecor = args.includes('--decor');
+const only = args.find((arg) => !arg.startsWith('--'));
 
 async function main() {
   const manifest = JSON.parse(readFileSync(path.join(directory, 'manifest.json'), 'utf8')) as ManifestEntry[];
@@ -61,18 +65,18 @@ async function main() {
     log(`${race.circuit_id} …`);
     try {
       const built = await buildOne(race, elevation.circuits[race.circuit_id], coords);
-      if (built.fit_m > 42) {
+      if (built.fit_m > MAX_FIT_M) {
         log(`  calage ${built.fit_m} m — eau précédente conservée`);
         continue;
       }
-      const prev = previous[race.circuit_id] as { stands?: unknown; blocks?: unknown; loops?: unknown } | undefined;
-      out[race.circuit_id] = {
-        ...built,
-        stands: prev?.stands ?? built.stands,
-        blocks: prev?.blocks ?? built.blocks,
-        loops: prev?.loops ?? built.loops,
-      };
-      log(`  fit ${built.fit_m} m · eau ${built.waters.length} · nappes ${built.sheets.length} · rives ${built.shores.length} · tribunes ${built.stands.length} · immeubles ${built.blocks.length} · anneaux ${built.loops.length}`);
+      const prev = previous[race.circuit_id] as { stands?: unknown[]; blocks?: unknown[]; loops?: unknown[] } | undefined;
+      // Un relevé vide n'est pas un choix : seul un décor déjà posé est conservé.
+      const keep = <T>(old: unknown[] | undefined, fresh: T[]): unknown[] => (!refreshDecor && old?.length ? old : fresh);
+      const stands = keep(prev?.stands, built.stands);
+      const blocks = keep(prev?.blocks, built.blocks);
+      const loops = keep(prev?.loops, built.loops);
+      out[race.circuit_id] = { ...built, stands, blocks, loops };
+      log(`  fit ${built.fit_m} m · eau ${built.waters.length} · nappes ${built.sheets.length} · tribunes ${stands.length} · immeubles ${blocks.length} · anneaux ${loops.length}`);
     } catch (error) {
       log(`  échec (${error instanceof Error ? error.message : 'réseau'})`);
     }
@@ -94,17 +98,14 @@ async function buildOne(race: ManifestEntry, profile: Profile, [lat, lon]: [numb
   const candidates = fetched.lines.slice();
   const traced = follow(gpWays.map((way) => way.pts), 450);
   if (traced.length > 8) candidates.push(traced);
-  let aligned: PlacedChain | null = null;
-  for (const candidate of candidates) {
-    const fit = align(track, [candidate], race.length_km);
-    if (fit && (!aligned || fit.errorM < aligned.errorM)) aligned = fit;
-  }
+  const aligned = align(track, candidates, race.length_km);
   if (!aligned) {
     const lengths = candidates.map((candidate) => Math.round(lengthOf(candidate, lat, lon))).sort((a, b) => b - a).slice(0, 6);
     log(`  aucune ligne dans la fenêtre (${race.length_km} km) : ${lengths.join(', ') || 'vide'}`);
   }
-  const empty = { fit_m: aligned?.errorM ?? 999, waters: [] as Xy[][], sheets: [] as Xy[][], shores: [] as Xy[][], stands: [] as Footprint[], blocks: [] as Footprint[], loops: [] as Xy[][] };
-  if (!aligned || aligned.errorM > 42) return { ...empty, fit_m: round(aligned?.errorM ?? 999) };
+  if (!aligned || aligned.errorM > MAX_FIT_M) {
+    return { fit_m: round(aligned?.errorM ?? 999), waters: [] as Xy[][], sheets: [] as Xy[][], stands: [] as Footprint[], blocks: [] as Footprint[], loops: [] as Xy[][] };
+  }
 
   const islands = await fetchIslands(lat, lon);
   if (islands.length) log(`  îles candidates ${islands.length}`);
@@ -148,7 +149,6 @@ async function buildOne(race: ManifestEntry, profile: Profile, [lat, lon]: [numb
     fit_m: round(aligned.errorM),
     waters,
     sheets,
-    shores: [],
     stands: dedupe(stands).slice(0, 160),
     blocks: dedupe(blocks).slice(0, 200),
     loops: loops.slice(0, 6),
@@ -556,7 +556,7 @@ function simplify(points: Xy[], min: number): Xy[] {
 function polyLength(ring: Xy[]): number {
   let length = 0;
   for (let i = 1; i < ring.length; i += 1) {
-    length += Math.hypot(ring[i].x - ring[i - 1].x, ring[i].y - ring[i - 1].y);
+    length += Math.hypot(ring[i][0] - ring[i - 1][0], ring[i][1] - ring[i - 1][1]);
   }
   return length;
 }

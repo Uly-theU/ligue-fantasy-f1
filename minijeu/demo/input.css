@@ -4,6 +4,9 @@
 
 @layer base {
   :root {
+    /* L'app charge ses polices avec next/font ; la démo, autonome, prend celles du système. */
+    --font-sans: ui-sans-serif, system-ui, sans-serif;
+    --font-mono: ui-monospace, monospace;
     --night: 18 14 48;
     --teal: 225 6 0;
     --ember: 225 6 0;

@@ -192,7 +192,7 @@ async function runDraft(
   const turnOrder = started.turn_order as string[];
   const rounds = started.total_rounds as number;
   const draftType = started.draft_type as string;
-  const names = new Map(BETA_PLAYERS.map((player) => [player.id, player.displayName]));
+  const names = new Map<string, string>(BETA_PLAYERS.map((player) => [player.id, player.displayName]));
   console.log(`  ${label} (${draftType}) : ${turnOrder.map((id) => names.get(id)).join(' → ')}`);
 
   const taken = new Set<string>();
