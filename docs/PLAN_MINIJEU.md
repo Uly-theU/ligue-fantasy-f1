@@ -18,7 +18,7 @@ L'ordre est imposé : un classement partagé n'a aucune valeur tant qu'un tour p
 ## Règles de travail pour l'agent
 
 1. **Une story = une branche = une PR.** Nom de branche : `story-0NN-titre-court`.
-2. **Le test d'abord.** Chaque story commence par le test qui échoue, cité dans sa section « Tests ».
+2. **Le test d'abord.** Chaque story commence par le test qui échoue, cité dans sa section « Tests ». Pour une modification purement visuelle, commencer par les captures avant et les scénarios de navigation ; ajouter un test de comportement si une interaction change.
 3. **Ne pas élargir le périmètre.** La section « Hors périmètre » de chaque story fait foi. Une idée en plus devient une ligne dans « Suite possible », pas du code.
 4. **Banc de test local uniquement** (règle du board) : Vitest, `next dev`, navigateur local. Pas de Vercel, pas de Supabase distant pour fermer une story.
 5. **Une story n'est fermée que si les quatre commandes passent** :
@@ -48,7 +48,39 @@ L'ordre est imposé : un classement partagé n'a aucune valeur tant qu'un tour p
 | F | Moteur tenable | 019, 020, 021 | Le moteur 3D se modifie sans risque et ne fuit pas |
 | G | Classement de ligue | 022, 023, 024, 025 | Les membres d'une ligue comparent leurs temps sur le GP de la semaine, sans triche possible côté client |
 
-Ordre : E entier, puis F et G peuvent avancer en parallèle (F touche `components/clm/race-view.ts`, G touche `lib/clm*.ts`, l'API et les pages). Dans G, l'ordre est 022 → 023 → 024 → 025.
+E doit être fermé avant le travail fonctionnel de G. F et G avancent ensuite en parallèle, avec une coordination explicite sur `components/clm/time-trial.tsx`. La story 026 porte l'interface arcade en parallèle de ces étapes ; elle ne change pas la physique.
+
+## Organisation du travail en parallèle
+
+Une session Cursor par chantier actif, avec un worktree et une branche par story. La branche `fix/minijeu-revue` sert de branche d'intégration ; chaque nouvelle story part de sa version à jour après intégration de ses dépendances.
+
+| Période | Session A | Session B | Session C |
+|---------|-----------|-----------|-----------|
+| Départ | 015 : CI, types, lint non interactif et build des démos | 016 → 017 → 018 : validation du tour, mesure du chrono, pas fixe | 026 : maquettes des écrans et composants visuels isolés |
+| Après fermeture de E | 019 → 020 → 021 : moteur 3D | 022 → 023 → 024 → 025 : rejeu et classement | 026 : intégration progressive de l'interface, selon les règles ci-dessous |
+
+La CI et la correction du chrono peuvent démarrer ensemble : elles portent sur des fichiers différents. Les stories 016, 017 et 018 restent successives car elles modifient la même simulation. Les stories 019, 020 et 021 restent également successives dans leur chantier.
+
+Règles d'intégration :
+
+- Un seul responsable modifie un fichier partagé à un instant donné. Chaque PR indique les fichiers réservés ; les autres sessions préparent leurs modules isolés en attendant.
+- `time-trial.tsx` est partagé entre 018, 020, 022, 025 et 026. Après E, intégrer l'enregistrement des entrées de 022 avant la modification de caméra de 020 ; 020 peut préparer la libération des ressources pendant ce temps. La présentation du HUD de 026 s'intègre après 020 et 022. La modification de 025 est coordonnée avec 026 selon la même règle.
+- 026 commence par les menus, la sélection des circuits, les options, les records et les composants du HUD dans un dossier dédié `components/clm/arcade/`. Ses styles sont limités à une racine `.clm-arcade`. L'habillage du classement se branche sur les données de 024 après son intégration.
+- 019 conserve son exigence de captures avant/après indiscernables. Intégrer la nouvelle présentation dans les écrans partagés après la revue visuelle de 019 ; ses composants peuvent être préparés en parallèle.
+- Une personne ou session assure l'intégration : elle examine les PR, gère les conflits des fichiers partagés et les mises à jour du board, reconstruit les HTML des démos à partir de l'ensemble intégré, puis relance les quatre commandes de contrôle. Les captures de 026 sont faites sur cette version commune.
+
+## Direction visuelle — arcade des années 80–90
+
+**Demande utilisateur du 2026-11-13 : l'interface du mini jeu s'inspire des jeux d'arcade des années 80 et 90.** Cette direction s'applique aux démos, à `/clm` et aux futurs écrans de classement du contre-la-montre.
+
+- **Écrans de borne** : titre expressif, sélection de circuit très visuelle, grand bouton de départ, écran de résultats et tableau des meilleurs temps. Garder les libellés en français.
+- **Typographie** : titres à caractère bitmap ou anguleux, chiffres monospaces bien lisibles pour le chrono, la vitesse et les écarts. Le corps de texte conserve une lecture confortable sur mobile.
+- **Palette de départ** : bleu nuit et noir, blanc cassé, jaune vif, cyan et rouge pour les accents et les états. Bordures franches, panneaux rectangulaires, damiers et ombres décalées donnent du relief.
+- **HUD de course** : chrono et vitesse immédiatement repérables, secteurs et écart hiérarchisés, messages de départ et de record courts et expressifs. Les commandes tactiles restent accessibles sans masquer la piste.
+- **Animation** : transitions rapides de sélection, compte à rebours et célébration du record. Les effets CRT et scanlines éventuels restent discrets, désactivables et absents des informations de conduite ; respecter la réduction des animations.
+- **Périmètre** : l'habillage et les interactions de l'interface. La scène 3D, les tracés, la physique et les règles de classement restent traités dans leurs stories respectives.
+
+La story 026 commence par une proposition visuelle desktop et mobile, puis applique le même langage aux menus, au HUD, aux résultats et aux classements.
 
 ---
 
@@ -60,6 +92,7 @@ Ordre : E entier, puis F et G peuvent avancer en parallèle (F touche `component
 - **Contexte** : `.github/workflows/ci.yml` ne lance que `npm test`. Neuf erreurs de types ont vécu sur la branche sans alerte, dont un bug réel (`polyLength` renvoyait `NaN`). `esbuild` est utilisé par `minijeu/demo/build.mjs` sans être déclaré dans `package.json`.
 - **Critères d'acceptation**
   - [ ] La CI lance `npx tsc --noEmit`, `npm run lint` et `node minijeu/demo/build.mjs` après `npm test`.
+  - [ ] Une configuration ESLint versionnée permet à `npm run lint` de fonctionner sans question interactive sur un checkout neuf.
   - [ ] `esbuild` est dans `devDependencies`.
   - [ ] Un script `npm run build:minijeu` existe et la CI l'utilise.
 - **Tests** : pousser une branche avec une erreur de type volontaire → la CI échoue ; la retirer → la CI passe.
@@ -206,9 +239,20 @@ Ordre : E entier, puis F et G peuvent avancer en parallèle (F touche `component
 
 ---
 
+## Interface transverse — story 026
+
+- **Type** : UI
+- **Fiche** : `design/stories/story-026-interface-arcade.md`.
+- **Objectif** : appliquer la direction arcade 80–90 aux menus, au HUD, aux résultats, aux records et au classement de ligue du contre-la-montre.
+- **Démarrage** : maquettes et composants isolés dès le début du chantier. Intégration du HUD après 018, 020 et 022 ; du classement après 024. Toute modification partagée avec 025 suit la réservation de fichiers.
+- **Preuve** : captures desktop et mobile des écrans, navigation au clavier, commandes tactiles et préférence de réduction des animations vérifiées sur la version intégrée.
+- **Hors périmètre** : physique, scène 3D, refonte des autres pages fantasy.
+
+---
+
 ## V2 — après le gate G
 
-> Cadrage décidé le 2026-11-13. Les stories 026 et suivantes ne sont pas encore écrites : les détailler au format de `design/stories/` avant de coder, une fois le gate G fermé.
+> Cadrage décidé le 2026-11-13. La story 026 est réservée à l'interface arcade. Les stories 027 et suivantes pour la V2 ne sont pas encore écrites : les détailler au format de `design/stories/` avant de coder, une fois le gate G fermé.
 
 Ordre : H, puis I et J, puis K et L. H passe en premier parce qu'il remet les records à zéro ; I et J s'appuient sur la fonction d'adhérence qu'il introduit.
 

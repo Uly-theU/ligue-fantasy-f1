@@ -22,6 +22,8 @@ Les membres d'une ligue comparent leurs temps sur le Grand Prix de la semaine.
 
 Reprendre le patron des routes de ligue : auth, Zod, appartenance, Prisma. Flèche retour vers le hub, comme les autres sous-pages.
 
+La présentation suit la direction arcade 80–90 de `docs/PLAN_MINIJEU.md`. Coordonner les composants visuels avec la story 026 ; l'API et les règles de tri restent dans cette story.
+
 ## Hors périmètre
 
 - Points de ligue attribués au chrono.

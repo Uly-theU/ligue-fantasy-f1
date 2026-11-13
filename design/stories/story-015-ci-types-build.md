@@ -14,6 +14,7 @@ La CI ne lance que `npm test`. Neuf erreurs de types ont vécu sur la branche sa
 ## Critères d'acceptation
 
 - [ ] La CI lance `npx tsc --noEmit`, `npm run lint` et le build des démos après `npm test`.
+- [ ] Une configuration ESLint versionnée permet à `npm run lint` de fonctionner sans question interactive sur un checkout neuf.
 - [ ] `esbuild` est dans `devDependencies`.
 - [ ] Un script `npm run build:minijeu` existe et la CI l'utilise.
 

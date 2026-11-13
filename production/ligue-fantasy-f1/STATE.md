@@ -61,10 +61,13 @@
 | 023 | Soumission et rejeu côté serveur | Integration | G | Ready | `design/stories/story-023-soumission-rejeu-serveur.md` |
 | 024 | Classement de ligue du contre-la-montre | Integration | G | Ready | `design/stories/story-024-classement-ligue-clm.md` |
 | 025 | Affronter le fantôme d'un membre | Logic | G | Ready | `design/stories/story-025-fantome-membre.md` |
+| 026 | Interface arcade des années 80–90 | UI | Transverse E–G | Ready | `design/stories/story-026-interface-arcade.md` |
 
 Ordre d'implémentation : 005, puis 001. 002 et 003 en parallèle de 001. Puis 004 et 006. Puis 007, 008, 009, 010. Puis 011 à 014.
 
-Contre-la-montre : 015 à 018 d'abord. Ensuite 019 à 021 d'un côté, 022 à 025 de l'autre, en parallèle. Détail dans `docs/PLAN_MINIJEU.md`.
+Contre-la-montre : 015 (CI), 016 → 017 → 018 (chrono) et préparation visuelle de 026 peuvent démarrer en parallèle. Après fermeture de E, 019 → 020 → 021 (3D), 022 → 023 → 024 → 025 (compétition) et 026 (interface) avancent dans des worktrees séparés. Un seul responsable à la fois sur les fichiers partagés ; l'intégration de 022 dans `time-trial.tsx` précède celle de 020, puis le HUD de 026. Détail dans `docs/PLAN_MINIJEU.md`.
+
+Direction de l'interface du mini jeu : arcade des années 80–90, demandée le 2026-11-13. La story 026 couvre menus, sélection des circuits, HUD, résultats et meilleurs temps ; maquettes desktop et mobile en premier.
 
 ## Gates franchis
 
@@ -93,7 +96,7 @@ Contre-la-montre : 015 à 018 d'abord. Ensuite 019 à 021 d'un côté, 022 à 02
 1. Renseigner l'URL et la clé anon Supabase dans un `.env` lu par Compose, puis `docker compose up -d` sur le VPS.
 2. Créer un second compte (Google ou lien magique) et vérifier la ligne `profiles`.
 3. Ne pas changer le DNS.
-4. Contre-la-montre : partir de la branche `fix/minijeu-revue`, story 015 puis 016.
+4. Contre-la-montre : partir de `fix/minijeu-revue` ; lancer 015 et 016 dans des worktrees distincts, avec les maquettes de 026 en parallèle.
 
 ## Journal
 
@@ -111,4 +114,5 @@ Contre-la-montre : 015 à 018 d'abord. Ensuite 019 à 021 d'un côté, 022 à 02
 | 2026-10-20 | Architecture : Compose app + Postgres + Caddy + cron. Les écritures ligues passent par Prisma. Le profil local est créé à la connexion Supabase. |
 | 2026-10-20 | Porte A : verrou à lock_time et gel de chaque équipe active. Porte D : enregistrement d'alignement, copie d'invitation, compte à rebours, menu mobile, pseudo généré. Healthcheck sur `/api/health`. |
 | 2026-11-13 | Revue du contre-la-montre. Corrections sur `fix/minijeu-revue` : script de décor, seuil de calage, démos, croisement de Monza. 272 tests verts, 0 erreur de types. Stories 015 à 025 écrites, gates E, F, G ouverts. |
+| 2026-11-13 | Plan Cursor précisé : CI, chrono et préparation UI en parallèle ; réservation des fichiers partagés et intégration commune. Direction arcade 80–90 et story 026 ajoutées. Implémentation non démarrée. |
 | 2026-10-20 | Preuve locale : Postgres temporaire, seed 22 pilotes / 24 GP, parcours navigateur (ligue, draft, équipe, classement 29 pts). Cron scores 200, ingestion 401 sans secret. |

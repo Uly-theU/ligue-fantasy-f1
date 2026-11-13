@@ -12,7 +12,7 @@
 
 | Métrique | Valeur |
 |----------|--------|
-| Sessions totales | 6 |
+| Sessions totales | 8 |
 | Date première session | 2026-10-06 |
 | Date dernière session | 2026-11-13 |
 
@@ -27,6 +27,7 @@
 | 5 | 2026-10-20 | vgs-build | Portes A et D en parallèle. Healthcheck `/api/health`. | Verrou à l'horloge, gel par équipe, budget conditionnel, UX week-end. 86 tests. Parcours navigateur en attente de Postgres. | Démarrer Postgres et rejouer hub, équipe, dashboard |
 | 6 | 2026-10-20 | vgs-build | Postgres temporaire, seed, parcours navigateur d'un joueur. | Le classement lit le snapshot : 29 pts sur un GP fictif. Deux comptes Supabase et Compose restent à faire. DNS inchangé. | Clés Supabase réelles, puis `docker compose up -d` |
 | 7 | 2026-11-13 | revue + planning | Revue du mini jeu, de la physique et du chrono. Corrections sur `fix/minijeu-revue`. 11 stories écrites (015 à 025). | Gates E, F, G. Le chrono passe avant le classement : un demi-tour valide un tour en 14 s. Le temps du serveur fera foi. Banc local. | Story 015, puis 016 |
+| 8 | 2026-11-13 | organisation + direction UI | Parallélisation Cursor précisée ; story 026 et direction visuelle arcade 80–90 ajoutées. | CI, chrono et préparation UI peuvent démarrer ensemble ; un seul responsable par fichier partagé. Aucun changement de code produit. | 015, 016 et maquettes de 026 dans des worktrees distincts |
 
 ## Consommation par phase
 
