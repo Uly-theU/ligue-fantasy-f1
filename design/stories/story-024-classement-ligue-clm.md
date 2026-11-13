@@ -2,7 +2,7 @@
 
 > **Phase** : Alpha — gate G
 > **Type** : Integration
-> **Statut** : In Progress
+> **Statut** : Done
 
 ## Contexte
 

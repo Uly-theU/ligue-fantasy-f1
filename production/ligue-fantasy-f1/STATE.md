@@ -11,7 +11,7 @@
 ## Status
 
 - **Statut global** : On Track
-- **Progression** : portes A et D vues dans le navigateur sur un Postgres local temporaire. Healthcheck `/api/health` en 200. Score d'un GP fictif : 29 points au classement. Le second compte Supabase et le Compose restent ouverts. Contre-la-montre : stories 019, 020, 022 et 023 intégrées (`780549d`). La caméra change sans recréer la scène. Vingt courses : 20 contextes perdus, aucun restauré. Gates F et G ouverts.
+- **Progression** : portes A et D vues dans le navigateur sur un Postgres local temporaire. Healthcheck `/api/health` en 200. Score d'un GP fictif : 29 points au classement. Le second compte Supabase et le Compose restent ouverts. Contre-la-montre : stories 019, 020, 022, 023 et 024 intégrées (`7a9333f`). Le classement de ligue trie les tours et laisse les membres sans temps en bas. Gates F et G ouverts.
 - **Blockers** : clés Supabase réelles absentes. Docker n'est pas installé, le Compose n'a pas démarré. Le Postgres de cette preuve vit dans `/tmp` et ne survit pas à un redémarrage.
 - **Dernière mise à jour** : `2026-11-13`
 
@@ -59,7 +59,7 @@
 | 021 | Construction de scène mesurée, fantôme correct | Logic | F | Ready | `design/stories/story-021-construction-scene.md` |
 | 022 | Enregistrer les entrées du tour | Logic | G | Done | `design/stories/story-022-entrees-du-tour.md` |
 | 023 | Soumission et rejeu côté serveur | Integration | G | Done | `design/stories/story-023-soumission-rejeu-serveur.md` |
-| 024 | Classement de ligue du contre-la-montre | Integration | G | Ready | `design/stories/story-024-classement-ligue-clm.md` |
+| 024 | Classement de ligue du contre-la-montre | Integration | G | Done | `design/stories/story-024-classement-ligue-clm.md` |
 | 025 | Affronter le fantôme d'un membre | Logic | G | Ready | `design/stories/story-025-fantome-membre.md` |
 | 026 | Interface arcade des années 80–90 | UI | Transverse E–G | In Progress | `design/stories/story-026-interface-arcade.md` |
 
@@ -96,7 +96,7 @@ Direction de l'interface du mini jeu : arcade des années 80–90, demandée le 
 1. Renseigner l'URL et la clé anon Supabase dans un `.env` lu par Compose, puis `docker compose up -d` sur le VPS.
 2. Créer un second compte (Google ou lien magique) et vérifier la ligne `profiles`.
 3. Ne pas changer le DNS.
-4. Contre-la-montre : 020 est intégrée. Enchaîner 021 (mesure de construction, roues du fantôme). 024 est en cours sur le classement. Le HUD de 026 attend que 024 ait fini les composants arcade. Ne pas merger la PR #5. `prisma db push` du modèle `TimeTrialLap` n'a pas été lancé.
+4. Contre-la-montre : 024 est intégrée. 021 mesure encore la scène. Enchaîner le HUD de 026 dans `time-trial.tsx`. Affronter (025) attend ce HUD. Ne pas merger la PR #5. `prisma db push` du modèle `TimeTrialLap` n'a pas été lancé.
 
 ## Journal
 
@@ -124,4 +124,5 @@ Direction de l'interface du mini jeu : arcade des années 80–90, demandée le 
 | 2026-11-13 | Story 019 mergée, PR #9, commit `5103843`. CI https://github.com/Uly-theU/ligue-fantasy-f1/actions/runs/43448988746 verte. Quatre images d'ouverture identiques octet pour octet. Pas un tour complet ni la vue cockpit. Gate F encore ouvert. |
 | 2026-11-13 | Story 023 mergée, PR #10, commit `5b6dbd2`. CI https://github.com/Uly-theU/ligue-fantasy-f1/actions/runs/43458318260 verte. Rejeu 3 min : 329 ms en local, 1 252 ms sur le runner. Écart trigo 1,5×10⁻¹³ s. Gate G encore ouvert. |
 | 2026-11-13 | Story 020 mergée, PR #11, commit `780549d`. CI https://github.com/Uly-theU/ligue-fantasy-f1/actions/runs/43484426136 verte. Vingt courses : 20 contextes créés et perdus, aucun restauré. Gate F encore ouvert (021). |
+| 2026-11-13 | Story 024 mergée, PR #12, commit `7a9333f`. CI https://github.com/Uly-theU/ligue-fantasy-f1/actions/runs/43484851210 verte. Classement membre, écart au premier. Tableau rempli non vu : pas de base joignable. Gate G encore ouvert (025). |
 | 2026-10-20 | Preuve locale : Postgres temporaire, seed 22 pilotes / 24 GP, parcours navigateur (ligue, draft, équipe, classement 29 pts). Cron scores 200, ingestion 401 sans secret. |
