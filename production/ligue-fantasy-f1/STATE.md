@@ -53,7 +53,7 @@
 | 015 | Types et build du mini jeu en CI | Config | E | Done | `design/stories/story-015-ci-types-build.md` |
 | 016 | Un demi-tour ne valide plus le tour | Logic | E | Done | `design/stories/story-016-demi-tour-ligne.md` |
 | 017 | Instant de franchissement interpolé | Logic | E | Done | `design/stories/story-017-franchissement-interpole.md` |
-| 018 | Pas de simulation fixe | Logic | E | Ready | `design/stories/story-018-pas-fixe.md` |
+| 018 | Pas de simulation fixe | Logic | E | In Progress | `design/stories/story-018-pas-fixe.md` |
 | 019 | Découper race-view.ts | Refactor | F | Ready | `design/stories/story-019-decoupe-race-view.md` |
 | 020 | Libérer la scène, changer de caméra sans la recréer | Logic | F | Ready | `design/stories/story-020-liberer-scene.md` |
 | 021 | Construction de scène mesurée, fantôme correct | Logic | F | Ready | `design/stories/story-021-construction-scene.md` |
@@ -96,7 +96,7 @@ Direction de l'interface du mini jeu : arcade des années 80–90, demandée le 
 1. Renseigner l'URL et la clé anon Supabase dans un `.env` lu par Compose, puis `docker compose up -d` sur le VPS.
 2. Créer un second compte (Google ou lien magique) et vérifier la ligne `profiles`.
 3. Ne pas changer le DNS.
-4. Contre-la-montre : la tranche maquettes de 026 est sur `fix/minijeu-revue` (`5127043`). La story reste ouverte : HUD après 018, 020 et 022, classement après 024. La story 018 est en cours.
+4. Contre-la-montre : la story 018 est intégrée (`fca26c5`) mais pas fermée. Il manque un tour complet à Monaco et un tour sur un circuit rapide avant de fermer le gate E. Ne pas merger la PR #5 : elle retirerait l'interpolation de secteur.
 
 ## Journal
 
@@ -118,4 +118,5 @@ Direction de l'interface du mini jeu : arcade des années 80–90, demandée le 
 | 2026-11-13 | Stories 015 et 016 mergées sur `fix/minijeu-revue`. CI https://github.com/Uly-theU/ligue-fantasy-f1/actions/runs/43411612065 verte. Gate E encore ouvert (017, 018). |
 | 2026-11-13 | Story 017 mergée, PR #4, commit `16d9646`. CI https://github.com/Uly-theU/ligue-fantasy-f1/actions/runs/43415547563 verte. Le temps de franchissement est interpolé. Gate E encore ouvert (018). |
 | 2026-11-13 | Première tranche 026 mergée, PR #6, commit `5127043`. Maquettes et composants isolés seulement. HUD et classement non branchés. Story 026 toujours ouverte. |
+| 2026-11-13 | Story 018 mergée, PR #7, commit `fca26c5`. CI https://github.com/Uly-theU/ligue-fantasy-f1/actions/runs/43431335944 verte. Pas fixe de 1/120 s. Tour complet non bouclé : gate E encore ouvert. |
 | 2026-10-20 | Preuve locale : Postgres temporaire, seed 22 pilotes / 24 GP, parcours navigateur (ligue, draft, équipe, classement 29 pts). Cron scores 200, ingestion 401 sans secret. |

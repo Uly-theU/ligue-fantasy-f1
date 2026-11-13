@@ -12,7 +12,7 @@
 
 | Métrique | Valeur |
 |----------|--------|
-| Sessions totales | 11 |
+| Sessions totales | 12 |
 | Date première session | 2026-10-06 |
 | Date dernière session | 2026-11-13 |
 
@@ -31,6 +31,7 @@
 | 9 | 2026-11-13 | intégration gate E | PR #3 (015) et PR #2 (016) mergées sur `fix/minijeu-revue` (`5fefdb8`). | `seen` n'avance que dans le sens de la marche. La CI enchaîne tests, types, lint et build des démos. Quatre commandes locales vertes ; le build a réécrit les HTML de démo, restaurés sans commit. Gate E ouvert tant que 017 et 018 ne sont pas fermées. | Story 017, puis 018. Maquettes 026 en parallèle |
 | 10 | 2026-11-13 | story 017 | PR #4 mergée (`16d9646`). 279 tests dans le worktree, CI verte. | Le temps de ligne vaut `t0 + fraction × dt`. Les pénalités de coupe restent entières. L'écart de secteur utilise la même fraction. La boucle à pas variable reste pour la story 018. | Story 018 |
 | 11 | 2026-11-13 | story 026, tranche 1 | PR #6 mergée (`5127043`). CI verte. Maquettes desktop et mobile, composants dans `components/clm/arcade/`. | La story n'est pas fermée. Le HUD attend 018, 020 et 022. Le classement attend 024. Affronter reste non branché. | Story 018, puis intégration du HUD |
+| 12 | 2026-11-13 | story 018 | PR #7 mergée (`fca26c5`). 281 tests, CI verte. | `takeClmSteps` borne une image à 60 pas de 1/120 s. La pose affichée est interpolée. Démo Monaco fluide jusqu'à Sainte-Dévote, tour non bouclé. Gate E ouvert tant que deux tours complets ne sont pas joués. | Tours complets Monaco et un circuit rapide, puis fermeture de E |
 
 ## Consommation par phase
 

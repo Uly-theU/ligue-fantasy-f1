@@ -2,7 +2,7 @@
 
 > **Phase** : Alpha — gate E
 > **Type** : Logic
-> **Statut** : Ready
+> **Statut** : In Progress
 
 ## Contexte
 
@@ -13,10 +13,10 @@
 
 ## Critères d'acceptation
 
-- [ ] La boucle accumule le temps écoulé et n'appelle la physique que par pas entiers de 1/120 s ; le reliquat est reporté à l'image suivante.
-- [ ] Les entrées (volant, gaz, frein) sont lues une fois par pas.
-- [ ] Le rendu interpole la pose de la voiture entre les deux derniers pas.
-- [ ] L'accumulation vit dans une fonction pure de `lib/`, testable sans navigateur.
+- [x] La boucle accumule le temps écoulé et n'appelle la physique que par pas entiers de 1/120 s ; le reliquat est reporté à l'image suivante.
+- [x] Les entrées (volant, gaz, frein) sont lues une fois par pas.
+- [x] Le rendu interpole la pose de la voiture entre les deux derniers pas.
+- [x] L'accumulation vit dans une fonction pure de `lib/`, testable sans navigateur.
 
 ## Notes d'implémentation
 
