@@ -37,6 +37,7 @@ Thumbs.db
 *.jpg
 *.jpeg
 *.gif
+!public/photos/**/*.jpg
 
 # VSCode
 .vscode/
