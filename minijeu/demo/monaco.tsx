@@ -35,12 +35,12 @@ export function Demo() {
           <Button type="button" variant="outline" onClick={toMenu}>Menu</Button>
         </div>
         <TimeTrial
-          key={camera}
           track={prepared.track}
           lengthKm={circuit.length_km}
           circuitId={circuit.circuit_id}
           elevation={prepared.samples}
           signs={prepared.signs}
+          camera={camera}
         />
       </Shell>
     );
@@ -83,7 +83,7 @@ export function Demo() {
       <h1 className="mt-2 text-4xl font-bold">{circuit.full_name}</h1>
       <p className="mt-2 text-sm text-muted-foreground">{formatKm(circuit.length_km)} · {describeCircuit(circuit)}</p>
       <div className="mt-8 flex flex-col gap-3">
-        <Button type="button" onClick={() => setScreen('race')}>Lancer le circuit</Button>
+        <Button type="button" onClick={() => { setCamera(readCamera()); setScreen('race'); }}>Lancer le circuit</Button>
         <Button
           type="button"
           variant="outline"

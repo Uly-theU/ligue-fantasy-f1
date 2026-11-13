@@ -2,7 +2,7 @@
 
 > **Phase** : Alpha — gate F
 > **Type** : Logic
-> **Statut** : Ready
+> **Statut** : In Progress
 
 ## Contexte
 
@@ -13,8 +13,8 @@
 
 ## Critères d'acceptation
 
-- [ ] `dispose()` appelle `renderer.forceContextLoss()`, libère la carte d'ombres et chaque `InstancedMesh`.
-- [ ] Le choix de caméra des options passe par une prop, sans `key` : la scène n'est construite qu'une fois par circuit.
+- [x] `dispose()` appelle `renderer.forceContextLoss()`, libère la carte d'ombres et chaque `InstancedMesh`.
+- [x] Le choix de caméra des options passe par une prop, sans `key` : la scène n'est construite qu'une fois par circuit.
 
 ## Notes d'implémentation
 
@@ -36,6 +36,7 @@
   - Given: `saison.html` est ouvert
   - When: on entre et sort de vingt courses
   - Then: la console n'affiche aucun avertissement de contextes WebGL
+  - Prouvé : vingt entrées et sorties d'Albert Park dans `saison.html` servi localement. Vingt contextes créés, vingt `webglcontextlost`, aucun restauré, aucun avertissement de contextes. Le seul message est l'avertissement déjà connu sur `PCFSoftShadowMap`.
 
 ## Dépendances
 
