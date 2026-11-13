@@ -12,7 +12,7 @@
 
 | Métrique | Valeur |
 |----------|--------|
-| Sessions totales | 16 |
+| Sessions totales | 17 |
 | Date première session | 2026-10-06 |
 | Date dernière session | 2026-11-13 |
 
@@ -36,6 +36,7 @@
 | 14 | 2026-11-13 | story 022 | PR #8 mergée (`fcde8e4`). CI verte au second passage. | Une entrée par pas de 1/120 s, rejouée à l'identique. 11 973 octets pour 90 s au clavier. Le premier passage CI échouait : Node 20 refusait un ArrayBuffer dans le compresseur. | Story 023. 020 après 019 |
 | 15 | 2026-11-13 | story 019 | PR #9 mergée (`5103843`). CI verte. | `race-view.ts` assemble. Monaco, Monza, Marina Bay et Spa : PNG d'ouverture identiques avant et après. Limite : pas de tour complet, pas de vue cockpit. | 020 après la fin de 023 sur `time-trial.tsx` |
 | 16 | 2026-11-13 | story 023 | PR #10 mergée (`5b6dbd2`). CI verte au second passage. | Le serveur rejoue les entrées et ignore le temps annoncé. Dix tours : écart max 1,5×10⁻¹³ s. Le schéma n'est pas poussé sur une base. | Stories 020 et 024 |
+| 17 | 2026-11-13 | story 020 | PR #11 mergée (`780549d`). CI verte. | `dispose()` perd le contexte, la carte d'ombres et les `InstancedMesh`. La caméra passe par une prop. Vingt courses Albert Park sans avertissement de contexte. | Story 021. HUD 026 après 024 |
 
 ## Consommation par phase
 
