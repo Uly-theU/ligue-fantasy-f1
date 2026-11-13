@@ -61,7 +61,7 @@
 | 023 | Soumission et rejeu côté serveur | Integration | G | Ready | `design/stories/story-023-soumission-rejeu-serveur.md` |
 | 024 | Classement de ligue du contre-la-montre | Integration | G | Ready | `design/stories/story-024-classement-ligue-clm.md` |
 | 025 | Affronter le fantôme d'un membre | Logic | G | Ready | `design/stories/story-025-fantome-membre.md` |
-| 026 | Interface arcade des années 80–90 | UI | Transverse E–G | Ready | `design/stories/story-026-interface-arcade.md` |
+| 026 | Interface arcade des années 80–90 | UI | Transverse E–G | In Progress | `design/stories/story-026-interface-arcade.md` |
 
 Ordre d'implémentation : 005, puis 001. 002 et 003 en parallèle de 001. Puis 004 et 006. Puis 007, 008, 009, 010. Puis 011 à 014.
 
@@ -96,7 +96,7 @@ Direction de l'interface du mini jeu : arcade des années 80–90, demandée le 
 1. Renseigner l'URL et la clé anon Supabase dans un `.env` lu par Compose, puis `docker compose up -d` sur le VPS.
 2. Créer un second compte (Google ou lien magique) et vérifier la ligne `profiles`.
 3. Ne pas changer le DNS.
-4. Contre-la-montre : 017 est sur `fix/minijeu-revue`. Enchaîner 018. La tranche maquettes de 026 continue en parallèle. Le gate E reste ouvert.
+4. Contre-la-montre : la tranche maquettes de 026 est sur `fix/minijeu-revue` (`5127043`). La story reste ouverte : HUD après 018, 020 et 022, classement après 024. La story 018 est en cours.
 
 ## Journal
 
@@ -117,4 +117,5 @@ Direction de l'interface du mini jeu : arcade des années 80–90, demandée le 
 | 2026-11-13 | Plan Cursor précisé : CI, chrono et préparation UI en parallèle ; réservation des fichiers partagés et intégration commune. Direction arcade 80–90 et story 026 ajoutées. Implémentation non démarrée. |
 | 2026-11-13 | Stories 015 et 016 mergées sur `fix/minijeu-revue`. CI https://github.com/Uly-theU/ligue-fantasy-f1/actions/runs/43411612065 verte. Gate E encore ouvert (017, 018). |
 | 2026-11-13 | Story 017 mergée, PR #4, commit `16d9646`. CI https://github.com/Uly-theU/ligue-fantasy-f1/actions/runs/43415547563 verte. Le temps de franchissement est interpolé. Gate E encore ouvert (018). |
+| 2026-11-13 | Première tranche 026 mergée, PR #6, commit `5127043`. Maquettes et composants isolés seulement. HUD et classement non branchés. Story 026 toujours ouverte. |
 | 2026-10-20 | Preuve locale : Postgres temporaire, seed 22 pilotes / 24 GP, parcours navigateur (ligue, draft, équipe, classement 29 pts). Cron scores 200, ingestion 401 sans secret. |

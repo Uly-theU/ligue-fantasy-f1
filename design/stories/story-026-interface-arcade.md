@@ -2,7 +2,7 @@
 
 > **Phase** : Alpha — transverse E, F, G
 > **Type** : UI
-> **Statut** : Ready
+> **Statut** : In Progress
 
 ## Contexte
 

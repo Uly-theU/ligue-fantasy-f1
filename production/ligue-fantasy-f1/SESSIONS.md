@@ -12,7 +12,7 @@
 
 | Métrique | Valeur |
 |----------|--------|
-| Sessions totales | 10 |
+| Sessions totales | 11 |
 | Date première session | 2026-10-06 |
 | Date dernière session | 2026-11-13 |
 
@@ -30,6 +30,7 @@
 | 8 | 2026-11-13 | organisation + direction UI | Parallélisation Cursor précisée ; story 026 et direction visuelle arcade 80–90 ajoutées. | CI, chrono et préparation UI peuvent démarrer ensemble ; un seul responsable par fichier partagé. Aucun changement de code produit. | 015, 016 et maquettes de 026 dans des worktrees distincts |
 | 9 | 2026-11-13 | intégration gate E | PR #3 (015) et PR #2 (016) mergées sur `fix/minijeu-revue` (`5fefdb8`). | `seen` n'avance que dans le sens de la marche. La CI enchaîne tests, types, lint et build des démos. Quatre commandes locales vertes ; le build a réécrit les HTML de démo, restaurés sans commit. Gate E ouvert tant que 017 et 018 ne sont pas fermées. | Story 017, puis 018. Maquettes 026 en parallèle |
 | 10 | 2026-11-13 | story 017 | PR #4 mergée (`16d9646`). 279 tests dans le worktree, CI verte. | Le temps de ligne vaut `t0 + fraction × dt`. Les pénalités de coupe restent entières. L'écart de secteur utilise la même fraction. La boucle à pas variable reste pour la story 018. | Story 018 |
+| 11 | 2026-11-13 | story 026, tranche 1 | PR #6 mergée (`5127043`). CI verte. Maquettes desktop et mobile, composants dans `components/clm/arcade/`. | La story n'est pas fermée. Le HUD attend 018, 020 et 022. Le classement attend 024. Affronter reste non branché. | Story 018, puis intégration du HUD |
 
 ## Consommation par phase
 
