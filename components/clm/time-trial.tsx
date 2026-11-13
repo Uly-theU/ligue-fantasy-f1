@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 import { Button } from '@/components/ui/button';
 import { buildRecord, crossedSector, deltaAt, formatDelta, parseRecord, sampleAtTime, type LapRecord, type LapSample } from '@/lib/clm-record';
+import { createLapInputLog, recordLapInput, type LapInputLog } from '@/lib/clm-replay';
 import { biomeFor } from '@/lib/circuit-biome';
 import { CLM_STEP_SECONDS, clmStepAlpha, createCar, crossingFraction, formatLap, interpolateClmPose, rampSteer, RUNOFF_RATIO, speedKmh, steerResponse, stepClm, STREET_RUNOFF_RATIO, takeClmSteps, topSpeed, type ClmCar } from '@/lib/clm';
 import { sampleElevation, type ElevationSample } from '@/lib/grade';
@@ -67,6 +68,8 @@ type Sim = {
   steer: number;
   cut: { seconds: number; until: number } | null;
   rescuedUntil: number;
+  /** Entrées réellement passées à stepClm, une plage par valeur tenue. */
+  inputs: LapInputLog;
 };
 
 type Held = {
@@ -221,6 +224,7 @@ export function TimeTrial({
       steer: 0,
       cut: null,
       rescuedUntil: 0,
+      inputs: createLapInputLog(),
     };
     simRef.current = sim;
     setHud(snapshot(sim, lengthKm, track));
@@ -288,6 +292,7 @@ export function TimeTrial({
           const steer = steerResponse(sim.steer);
           const brake = held.brake || keys.has('ArrowDown') || keys.has('KeyS') || keys.has('Space') ? 1 : 0;
           const throttle = held.throttle || keys.has('ArrowUp') || keys.has('KeyW') || keys.has('KeyZ') ? 1 : 0;
+          recordLapInput(sim.inputs, { steer, brake, throttle });
           const prevS = sim.car.s;
           const prevTime = sim.car.time;
           const prevPenalty = sim.car.penalty;
@@ -388,6 +393,7 @@ export function TimeTrial({
     sim.sector = null;
     sim.cut = null;
     sim.rescuedUntil = 0;
+    sim.inputs = createLapInputLog();
   }
 
   function reset(sim: Sim, course: Track, now: number) {
@@ -406,6 +412,7 @@ export function TimeTrial({
     sim.sector = null;
     sim.cut = null;
     sim.rescuedUntil = 0;
+    sim.inputs = createLapInputLog();
   }
 
   const start = () => {

@@ -2,7 +2,7 @@
 
 > **Phase** : Alpha — gate G
 > **Type** : Logic
-> **Statut** : Ready
+> **Statut** : In Progress
 
 ## Contexte
 
@@ -13,9 +13,9 @@ Pour qu'un temps soit comparable entre joueurs, le serveur doit pouvoir le recal
 
 ## Critères d'acceptation
 
-- [ ] Le client enregistre une entrée par pas : volant, gaz, frein, dans un format compact (plages « même entrée pendant N pas »).
-- [ ] `replayLap(track, inputs, …)` rejoue ces entrées et renvoie le temps, les secteurs et les pénalités.
-- [ ] Un tour de 90 s pèse moins de 20 Ko une fois sérialisé.
+- [x] Le client enregistre une entrée par pas : volant, gaz, frein, dans un format compact (plages « même entrée pendant N pas »).
+- [x] `replayLap(track, inputs, …)` rejoue ces entrées et renvoie le temps, les secteurs et les pénalités.
+- [x] Un tour de 90 s pèse moins de 20 Ko une fois sérialisé.
 
 ## Notes d'implémentation
 
