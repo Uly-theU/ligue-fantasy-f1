@@ -2,7 +2,7 @@
 
 > **Phase** : Alpha — gate G
 > **Type** : Integration
-> **Statut** : Ready
+> **Statut** : In Progress
 
 ## Contexte
 
@@ -13,10 +13,10 @@ Les membres d'une ligue comparent leurs temps sur le Grand Prix de la semaine.
 
 ## Critères d'acceptation
 
-- [ ] `GET /api/leagues/[id]/clm?gameweek=…` : réservé aux membres, renvoie les tours classés avec l'écart au premier.
-- [ ] Page `/league/[id]/clm` : rang, joueur, temps, secteurs, écart ; la ligne du joueur connecté est mise en avant. Lien depuis le hub.
-- [ ] Les membres sans tour apparaissent en bas, sans temps.
-- [ ] États vide, chargement et erreur traités avec le toast existant.
+- [x] `GET /api/leagues/[id]/clm?gameweek=…` : réservé aux membres, renvoie les tours classés avec l'écart au premier.
+- [x] Page `/league/[id]/clm` : rang, joueur, temps, secteurs, écart ; la ligne du joueur connecté est mise en avant. Lien depuis le hub.
+- [x] Les membres sans tour apparaissent en bas, sans temps.
+- [x] États vide, chargement et erreur traités avec le toast existant.
 
 ## Notes d'implémentation
 

@@ -153,6 +153,7 @@ export default function LeaguePage() {
   const links = [
     { href: `/league/${id}/team`, label: 'Mon équipe' },
     { href: `/league/${id}/standings`, label: 'Classement' },
+    { href: `/league/${id}/clm`, label: 'Contre-la-montre' },
     league.draft_mode === 'salary_cap'
       ? { href: `/league/${id}/market`, label: 'Marché' }
       : { href: `/league/${id}/draft`, label: 'Draft' },
