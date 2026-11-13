@@ -177,8 +177,8 @@ async function inflateRaw(bytes: Uint8Array): Promise<Uint8Array> {
 async function pipeBytes(bytes: Uint8Array, codec: CompressionStream | DecompressionStream): Promise<Uint8Array> {
   const payload = new Uint8Array(bytes.byteLength);
   payload.set(bytes);
-  // La lecture doit avancer en même temps que l’écriture, sinon le tampon bloque.
-  const written = writeAll(codec.writable, payload.buffer);
+  // Node 20 refuse un ArrayBuffer nu. La lecture avance avec l’écriture, sinon le tampon bloque.
+  const written = writeAll(codec.writable, payload);
   const reader = codec.readable.getReader();
   const chunks: Uint8Array[] = [];
   let size = 0;
@@ -198,7 +198,7 @@ async function pipeBytes(bytes: Uint8Array, codec: CompressionStream | Decompres
   return out;
 }
 
-function writeAll(writable: WritableStream<BufferSource>, bytes: ArrayBuffer): Promise<void> {
+function writeAll(writable: WritableStream<Uint8Array>, bytes: Uint8Array): Promise<void> {
   const writer = writable.getWriter();
   return writer.write(bytes).then(() => writer.close());
 }
