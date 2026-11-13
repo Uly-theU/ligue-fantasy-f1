@@ -55,3 +55,11 @@ export const upsertPerformanceSchema = z.object({
     positions_gained: z.number().int().default(0),
   }),
 });
+
+// ── Contre-la-montre ───────────────────────────────
+// Le temps annoncé par le client n'est pas un champ : seules les entrées sont lues.
+
+export const submitTimeTrialLapSchema = z.object({
+  gameweek_id: z.string().uuid(),
+  inputs: z.string().min(1),
+});

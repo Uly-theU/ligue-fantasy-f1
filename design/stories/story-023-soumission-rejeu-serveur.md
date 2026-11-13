@@ -2,7 +2,7 @@
 
 > **Phase** : Alpha — gate G
 > **Type** : Integration
-> **Statut** : Ready
+> **Statut** : In Progress
 
 ## Contexte
 
@@ -13,11 +13,11 @@ Le temps officiel est celui que le serveur calcule en rejouant les entrées. Le 
 
 ## Critères d'acceptation
 
-- [ ] Modèle Prisma `TimeTrialLap` : joueur, gameweek, circuit, temps officiel, secteurs, pénalités, entrées, date. Unicité `(user_id, gameweek_id)`.
-- [ ] `POST /api/clm/laps` : auth, Zod, rejeu serveur, écriture.
-- [ ] Refus : 401 sans session, 400 entrées invalides, 409 Grand Prix clos, 422 tour non bouclé, 413 au-delà de 256 Ko.
-- [ ] Un tour plus lent que le meilleur existant répond 200 sans écraser.
-- [ ] Le rejeu d'un tour de 3 minutes prend moins de 500 ms sur la machine de test.
+- [x] Modèle Prisma `TimeTrialLap` : joueur, gameweek, circuit, temps officiel, secteurs, pénalités, entrées, date. Unicité `(user_id, gameweek_id)`.
+- [x] `POST /api/clm/laps` : auth, Zod, rejeu serveur, écriture.
+- [x] Refus : 401 sans session, 400 entrées invalides, 409 Grand Prix clos, 422 tour non bouclé, 413 au-delà de 256 Ko.
+- [x] Un tour plus lent que le meilleur existant répond 200 sans écraser.
+- [x] Le rejeu d'un tour de 3 minutes prend moins de 500 ms sur la machine de test.
 
 ## Notes d'implémentation
 
