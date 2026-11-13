@@ -198,7 +198,7 @@ async function pipeBytes(bytes: Uint8Array, codec: CompressionStream | Decompres
   return out;
 }
 
-function writeAll(writable: WritableStream<Uint8Array>, bytes: Uint8Array): Promise<void> {
+function writeAll(writable: WritableStream<BufferSource>, bytes: Uint8Array): Promise<void> {
   const writer = writable.getWriter();
   return writer.write(bytes).then(() => writer.close());
 }
