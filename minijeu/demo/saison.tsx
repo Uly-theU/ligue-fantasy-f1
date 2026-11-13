@@ -96,6 +96,7 @@ export function Demo() {
   };
 
   const openRace = (id: string) => {
+    setCamera(readCamera());
     setCircuitId(id);
     writeChoice(id);
     setScreen('race');
@@ -220,12 +221,13 @@ function Race({ circuit, camera, onMenu }: { circuit: Circuit; camera: Camera; o
         <Button type="button" variant="outline" onClick={onMenu}>Circuits</Button>
       </div>
       <TimeTrial
-        key={`${circuit.circuit_id}:${camera}`}
+        key={circuit.circuit_id}
         track={prepared.track}
         lengthKm={circuit.length_km}
         circuitId={circuit.circuit_id}
         elevation={prepared.samples}
         signs={prepared.signs}
+        camera={camera}
       />
     </>
   );

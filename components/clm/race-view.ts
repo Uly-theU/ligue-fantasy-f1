@@ -51,6 +51,7 @@ export class RaceView {
   private readonly bin: Array<{ dispose: () => void }> = [];
   private readonly seen = new Set<object>();
   private envTarget: THREE.WebGLRenderTarget | null = null;
+  private released = false;
   private readonly ctx: RaceCtx;
   private readonly player: ReturnType<typeof makeCar>;
   private readonly ghost: ReturnType<typeof makeCar>;
@@ -204,12 +205,42 @@ export class RaceView {
   }
 
   dispose() {
+    if (this.released) return;
+    this.released = true;
     this.canvasRemove();
     this.scene.environment = null;
     this.envTarget?.dispose();
+    this.envTarget = null;
+    this.releaseShadowMap();
+    this.releaseInstances();
     for (const item of this.bin) item.dispose();
     this.bin.length = 0;
+    this.seen.clear();
+    // Tant que l'écouteur de three est en place, la perte reste définitive.
+    // dispose() le retire : l'appeler avant rendrait le contexte au navigateur.
+    this.renderer.forceContextLoss();
     this.renderer.dispose();
+  }
+
+  /** La carte n'existe qu'après un rendu : on la lâche une fois, passe comprise. */
+  private releaseShadowMap() {
+    const shadow = this.sun.shadow;
+    const map = shadow.map;
+    const pass = shadow.mapPass;
+    shadow.map = null;
+    shadow.mapPass = null;
+    map?.dispose();
+    if (pass && pass !== map) pass.dispose();
+  }
+
+  /** Chaque maillage instancié porte ses propres tampons, en plus de la géométrie partagée. */
+  private releaseInstances() {
+    const released = new Set<THREE.InstancedMesh>();
+    this.scene.traverse((object) => {
+      if (!(object instanceof THREE.InstancedMesh) || released.has(object)) return;
+      released.add(object);
+      object.dispose();
+    });
   }
 
   private canvasRemove() {

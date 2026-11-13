@@ -117,6 +117,7 @@ export function TimeTrial({
   elevation,
   signs,
   gameweekId = null,
+  camera: cameraProp,
 }: {
   track: Track;
   lengthKm: number;
@@ -124,6 +125,8 @@ export function TimeTrial({
   elevation?: ElevationSample[];
   signs?: TrackSign[];
   gameweekId?: string | null;
+  /** Vue choisie dans les options. Absente : on relit `clm-camera`. */
+  camera?: RaceCamera;
 }) {
   const hostRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<HTMLCanvasElement>(null);
@@ -132,20 +135,25 @@ export function TimeTrial({
   const heldRef = useRef<Held>({ left: false, right: false, brake: false, throttle: false });
   const engineRef = useRef<Engine | null>(null);
   const [hud, setHud] = useState<Hud>(EMPTY_HUD);
-  const [camera, setCamera] = useState<RaceCamera>('chase');
-  const cameraRef = useRef<RaceCamera>('chase');
+  const [camera, setCamera] = useState<RaceCamera>(cameraProp ?? 'chase');
+  const cameraRef = useRef<RaceCamera>(cameraProp ?? 'chase');
   const submitSeq = useRef(0);
   const [officialTime, setOfficialTime] = useState<number | null>(null);
   const [homologation, setHomologation] = useState<'idle' | 'pending' | 'done' | 'error'>('idle');
 
   useEffect(() => {
+    if (cameraProp === 'chase' || cameraProp === 'cockpit') {
+      cameraRef.current = cameraProp;
+      setCamera(cameraProp);
+      return;
+    }
     try {
       if (localStorage.getItem(CAMERA_KEY) === 'cockpit') {
         cameraRef.current = 'cockpit';
         setCamera('cockpit');
       }
     } catch { /* stockage privé */ }
-  }, []);
+  }, [cameraProp]);
 
   const toggleCamera = () => {
     const next: RaceCamera = cameraRef.current === 'cockpit' ? 'chase' : 'cockpit';
