@@ -11,7 +11,7 @@
 ## Status
 
 - **Statut global** : On Track
-- **Progression** : portes A et D vues dans le navigateur sur un Postgres local temporaire. Healthcheck `/api/health` en 200. Score d'un GP fictif : 29 points au classement. Le second compte Supabase et le Compose restent ouverts. Contre-la-montre : gate E fermé. Stories 019 et 022 intégrées sur `fix/minijeu-revue` (`5103843`). La vue de course est découpée ; les quatre images d'ouverture sont identiques octet pour octet. Gate F et gate G ouverts.
+- **Progression** : portes A et D vues dans le navigateur sur un Postgres local temporaire. Healthcheck `/api/health` en 200. Score d'un GP fictif : 29 points au classement. Le second compte Supabase et le Compose restent ouverts. Contre-la-montre : stories 019, 022 et 023 intégrées (`5b6dbd2`). Le temps officiel est celui du rejeu serveur. Écart navigateur/Node : 1,5×10⁻¹³ s. Gates F et G ouverts.
 - **Blockers** : clés Supabase réelles absentes. Docker n'est pas installé, le Compose n'a pas démarré. Le Postgres de cette preuve vit dans `/tmp` et ne survit pas à un redémarrage.
 - **Dernière mise à jour** : `2026-11-13`
 
@@ -58,7 +58,7 @@
 | 020 | Libérer la scène, changer de caméra sans la recréer | Logic | F | Ready | `design/stories/story-020-liberer-scene.md` |
 | 021 | Construction de scène mesurée, fantôme correct | Logic | F | Ready | `design/stories/story-021-construction-scene.md` |
 | 022 | Enregistrer les entrées du tour | Logic | G | Done | `design/stories/story-022-entrees-du-tour.md` |
-| 023 | Soumission et rejeu côté serveur | Integration | G | Ready | `design/stories/story-023-soumission-rejeu-serveur.md` |
+| 023 | Soumission et rejeu côté serveur | Integration | G | Done | `design/stories/story-023-soumission-rejeu-serveur.md` |
 | 024 | Classement de ligue du contre-la-montre | Integration | G | Ready | `design/stories/story-024-classement-ligue-clm.md` |
 | 025 | Affronter le fantôme d'un membre | Logic | G | Ready | `design/stories/story-025-fantome-membre.md` |
 | 026 | Interface arcade des années 80–90 | UI | Transverse E–G | In Progress | `design/stories/story-026-interface-arcade.md` |
@@ -96,7 +96,7 @@ Direction de l'interface du mini jeu : arcade des années 80–90, demandée le 
 1. Renseigner l'URL et la clé anon Supabase dans un `.env` lu par Compose, puis `docker compose up -d` sur le VPS.
 2. Créer un second compte (Google ou lien magique) et vérifier la ligne `profiles`.
 3. Ne pas changer le DNS.
-4. Contre-la-montre : 019 et 022 sont intégrées. 023 tient `time-trial.tsx` pour l'envoi du journal. 020 démarre ensuite : libération WebGL, puis la caméra par prop. Le HUD de 026 attend 020. Ne pas merger la PR #5.
+4. Contre-la-montre : 023 est intégrée. Enchaîner 020 (caméra et libération WebGL) et 024 (classement). Le HUD de 026 attend 020. Ne pas merger la PR #5. `prisma db push` du modèle `TimeTrialLap` n'a pas été lancé.
 
 ## Journal
 
@@ -122,4 +122,5 @@ Direction de l'interface du mini jeu : arcade des années 80–90, demandée le 
 | 2026-11-13 | Gate E fermé. Tours scriptés : Monaco 1:00.644, Monza 1:12.923, identiques à 60 et 144 Hz. Pas une conduite à la main. |
 | 2026-11-13 | Story 022 mergée, PR #8, commit `fcde8e4`. CI https://github.com/Uly-theU/ligue-fantasy-f1/actions/runs/43447896107 verte après correction du compresseur sous Node 20. Tour clavier de 90 s : 11 973 octets. Gate G encore ouvert. |
 | 2026-11-13 | Story 019 mergée, PR #9, commit `5103843`. CI https://github.com/Uly-theU/ligue-fantasy-f1/actions/runs/43448988746 verte. Quatre images d'ouverture identiques octet pour octet. Pas un tour complet ni la vue cockpit. Gate F encore ouvert. |
+| 2026-11-13 | Story 023 mergée, PR #10, commit `5b6dbd2`. CI https://github.com/Uly-theU/ligue-fantasy-f1/actions/runs/43458318260 verte. Rejeu 3 min : 329 ms en local, 1 252 ms sur le runner. Écart trigo 1,5×10⁻¹³ s. Gate G encore ouvert. |
 | 2026-10-20 | Preuve locale : Postgres temporaire, seed 22 pilotes / 24 GP, parcours navigateur (ligue, draft, équipe, classement 29 pts). Cron scores 200, ingestion 401 sans secret. |
