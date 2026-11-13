@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { TOP_SPEED_KMH, createCar, crossingFraction, cutPenalty, fitRoad, formatLap, nextRaceFrom, noteLap, rampSteer, RUNOFF_RATIO, speedKmh, stepClm, STREET_RUNOFF_RATIO, topSpeed } from '@/lib/clm';
+import { CLM_STEP_SECONDS, TOP_SPEED_KMH, createCar, crossingFraction, cutPenalty, fitRoad, formatLap, nextRaceFrom, noteLap, rampSteer, RUNOFF_RATIO, speedKmh, stepClm, STREET_RUNOFF_RATIO, takeClmSteps, topSpeed } from '@/lib/clm';
 import { profileAt } from '@/lib/grade';
 import { narrowAt, narrowTrack, nearestTrack, orientTrack, paintedHalf, paintedHalfAt, pointAt, projectTrack, trackFromSvg } from '@/lib/track-path';
 
@@ -626,6 +626,56 @@ describe('épingle du Fairmont', () => {
       expect(car.rescues).toBe(0);
     }
     expect(car.s / track.length).toBeGreaterThan(0.46);
+  });
+});
+
+describe('pas fixe', () => {
+  const script = (step: number) => ({
+    steer: step % 30 < 15 ? 0.8 : -0.55,
+    throttle: step % 40 < 32 ? 1 : 0,
+    brake: step % 40 >= 34 ? 1 : 0,
+  });
+
+  /** Une seconde d’images, le même script lu une fois par pas de 1/120 s. */
+  function replay(frame: number) {
+    const track = trackFromSvg(SQUARE)!;
+    const max = topSpeed(track);
+    let car = createCar(track);
+    let wheel = 0;
+    let leftover = 0;
+    let step = 0;
+    const frames = Math.round(1 / frame);
+    for (let i = 0; i < frames; i += 1) {
+      const tick = takeClmSteps(leftover, frame);
+      leftover = tick.leftover;
+      for (let n = 0; n < tick.steps; n += 1) {
+        const input = script(step);
+        wheel = rampSteer(wheel, input.steer, CLM_STEP_SECONDS, max > 0 ? car.speed / max : 0);
+        car = stepClm(track, car, {
+          steer: wheel,
+          brake: input.brake,
+          throttle: input.throttle,
+        }, CLM_STEP_SECONDS);
+        step += 1;
+      }
+    }
+    return car;
+  }
+
+  it('donne le même ClmCar à 30, 60 et 144 Hz', () => {
+    const at30 = replay(1 / 30);
+    const at60 = replay(1 / 60);
+    const at144 = replay(1 / 144);
+    expect(at30.time).toBeGreaterThan(0.5);
+    expect(at30).toEqual(at60);
+    expect(at30).toEqual(at144);
+  });
+
+  it('ne simule pas plus de 60 pas pour une image de 0,5 s', () => {
+    expect(takeClmSteps(0, 0.5).steps).toBeLessThanOrEqual(60);
+    expect(takeClmSteps(0, 0.5).steps).toBe(60);
+    expect(takeClmSteps(0, 2).steps).toBeLessThanOrEqual(60);
+    expect(takeClmSteps(CLM_STEP_SECONDS * 0.9, 0.5).steps).toBeLessThanOrEqual(60);
   });
 });
 
