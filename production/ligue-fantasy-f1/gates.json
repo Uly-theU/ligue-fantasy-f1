@@ -14,5 +14,17 @@
   "gate-d": {
     "status": "open",
     "comment": "Stories 011 à 014. DNS hors boucle de test."
+  },
+  "gate-e": {
+    "status": "open",
+    "comment": "Chrono honnête. Stories 015 à 018. Preuve en local."
+  },
+  "gate-f": {
+    "status": "open",
+    "comment": "Moteur tenable. Stories 019 à 021."
+  },
+  "gate-g": {
+    "status": "open",
+    "comment": "Classement de ligue du contre-la-montre. Stories 022 à 025. Dépend du gate E."
   }
 }

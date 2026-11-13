@@ -13,7 +13,7 @@
 - **Statut global** : On Track
 - **Progression** : portes A et D vues dans le navigateur sur un Postgres local temporaire. Healthcheck `/api/health` en 200. Score d'un GP fictif : 29 points au classement. Le second compte Supabase et le Compose restent ouverts.
 - **Blockers** : clés Supabase réelles absentes. Docker n'est pas installé, le Compose n'a pas démarré. Le Postgres de cette preuve vit dans `/tmp` et ne survit pas à un redémarrage.
-- **Dernière mise à jour** : `2026-10-20`
+- **Dernière mise à jour** : `2026-11-13`
 
 ## Contexte
 
@@ -50,8 +50,21 @@
 | 012 | Appel local des crons | Integration | D | In Progress | `design/stories/story-012-timers-cron.md` |
 | 013 | Livraison testée en local | Integration | D | In Progress | `design/stories/story-013-deploiement.md` |
 | 014 | Checklist de bascule, preuve en local | Config | D | In Progress | `design/stories/story-014-bascule-dns.md` |
+| 015 | Types et build du mini jeu en CI | Config | E | Ready | `design/stories/story-015-ci-types-build.md` |
+| 016 | Un demi-tour ne valide plus le tour | Logic | E | Ready | `design/stories/story-016-demi-tour-ligne.md` |
+| 017 | Instant de franchissement interpolé | Logic | E | Ready | `design/stories/story-017-franchissement-interpole.md` |
+| 018 | Pas de simulation fixe | Logic | E | Ready | `design/stories/story-018-pas-fixe.md` |
+| 019 | Découper race-view.ts | Refactor | F | Ready | `design/stories/story-019-decoupe-race-view.md` |
+| 020 | Libérer la scène, changer de caméra sans la recréer | Logic | F | Ready | `design/stories/story-020-liberer-scene.md` |
+| 021 | Construction de scène mesurée, fantôme correct | Logic | F | Ready | `design/stories/story-021-construction-scene.md` |
+| 022 | Enregistrer les entrées du tour | Logic | G | Ready | `design/stories/story-022-entrees-du-tour.md` |
+| 023 | Soumission et rejeu côté serveur | Integration | G | Ready | `design/stories/story-023-soumission-rejeu-serveur.md` |
+| 024 | Classement de ligue du contre-la-montre | Integration | G | Ready | `design/stories/story-024-classement-ligue-clm.md` |
+| 025 | Affronter le fantôme d'un membre | Logic | G | Ready | `design/stories/story-025-fantome-membre.md` |
 
 Ordre d'implémentation : 005, puis 001. 002 et 003 en parallèle de 001. Puis 004 et 006. Puis 007, 008, 009, 010. Puis 011 à 014.
+
+Contre-la-montre : 015 à 018 d'abord. Ensuite 019 à 021 d'un côté, 022 à 025 de l'autre, en parallèle. Détail dans `docs/PLAN_MINIJEU.md`.
 
 ## Gates franchis
 
@@ -61,6 +74,9 @@ Ordre d'implémentation : 005, puis 001. 002 et 003 en parallèle de 001. Puis 0
 | B Course fidèle | — | Ouvert | 004, 006 |
 | C Bords fermés | — | Ouvert | 007, 008, 009, 010 |
 | D Hors Vercel | — | Ouvert | Preuve locale. DNS manuel, plus tard |
+| E Chrono honnête | — | Ouvert | 015, 016, 017, 018 |
+| F Moteur tenable | — | Ouvert | 019, 020, 021 |
+| G Classement de ligue du chrono | — | Ouvert | 022 à 025. Dépend de E |
 
 ## Risques projet
 
@@ -69,12 +85,15 @@ Ordre d'implémentation : 005, puis 001. 002 et 003 en parallèle de 001. Puis 0
 | 2026-10-06 | Basculer le DNS avant le gate A déplace le 401 des crons et le roster mobile | Critique | Ouvert |
 | 2026-10-06 | Traiter un owner de ligue comme admin des résultats : le calendrier est global | Élevé | Ouvert |
 | 2026-10-06 | `qualifying_position` plafonné à 20 dans Zod, grille visée à 22 | Moyen | Ouvert |
+| 2026-11-13 | Un demi-tour sur la ligne de départ valide un tour (14 s à Monza) : aucun temps n'est comparable avant la story 016 | Critique | Ouvert |
+| 2026-11-13 | Le rejeu serveur peut différer du client de quelques millisecondes : le temps du serveur doit faire foi (story 023) | Moyen | Ouvert |
 
 ## Prochaines actions
 
 1. Renseigner l'URL et la clé anon Supabase dans un `.env` lu par Compose, puis `docker compose up -d` sur le VPS.
 2. Créer un second compte (Google ou lien magique) et vérifier la ligne `profiles`.
 3. Ne pas changer le DNS.
+4. Contre-la-montre : partir de la branche `fix/minijeu-revue`, story 015 puis 016.
 
 ## Journal
 
@@ -91,4 +110,5 @@ Ordre d'implémentation : 005, puis 001. 002 et 003 en parallèle de 001. Puis 0
 | 2026-10-06 | Pré-rendu débloqué : `@supabase/supabase-js` n'est plus externalisé, le module d'auth redevient synchrone. `next build` et `next start` servent les pages. Story 011 fermée. |
 | 2026-10-20 | Architecture : Compose app + Postgres + Caddy + cron. Les écritures ligues passent par Prisma. Le profil local est créé à la connexion Supabase. |
 | 2026-10-20 | Porte A : verrou à lock_time et gel de chaque équipe active. Porte D : enregistrement d'alignement, copie d'invitation, compte à rebours, menu mobile, pseudo généré. Healthcheck sur `/api/health`. |
+| 2026-11-13 | Revue du contre-la-montre. Corrections sur `fix/minijeu-revue` : script de décor, seuil de calage, démos, croisement de Monza. 272 tests verts, 0 erreur de types. Stories 015 à 025 écrites, gates E, F, G ouverts. |
 | 2026-10-20 | Preuve locale : Postgres temporaire, seed 22 pilotes / 24 GP, parcours navigateur (ligue, draft, équipe, classement 29 pts). Cron scores 200, ingestion 401 sans secret. |

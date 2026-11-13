@@ -14,7 +14,7 @@
 |----------|--------|
 | Sessions totales | 6 |
 | Date première session | 2026-10-06 |
-| Date dernière session | 2026-10-20 |
+| Date dernière session | 2026-11-13 |
 
 ## Sessions
 
@@ -26,6 +26,7 @@
 | 4 | 2026-10-20 | vgs-build | Architecture Docker. Postgres dans Compose, auth Supabase conservée. | Les données ligues passent par Prisma. Le profil est créé à la connexion, le trigger `auth.users` ne voit pas la base Docker. DNS inchangé. | Renseigner l'URL et la clé anon, puis `docker compose up -d` |
 | 5 | 2026-10-20 | vgs-build | Portes A et D en parallèle. Healthcheck `/api/health`. | Verrou à l'horloge, gel par équipe, budget conditionnel, UX week-end. 86 tests. Parcours navigateur en attente de Postgres. | Démarrer Postgres et rejouer hub, équipe, dashboard |
 | 6 | 2026-10-20 | vgs-build | Postgres temporaire, seed, parcours navigateur d'un joueur. | Le classement lit le snapshot : 29 pts sur un GP fictif. Deux comptes Supabase et Compose restent à faire. DNS inchangé. | Clés Supabase réelles, puis `docker compose up -d` |
+| 7 | 2026-11-13 | revue + planning | Revue du mini jeu, de la physique et du chrono. Corrections sur `fix/minijeu-revue`. 11 stories écrites (015 à 025). | Gates E, F, G. Le chrono passe avant le classement : un demi-tour valide un tour en 14 s. Le temps du serveur fera foi. Banc local. | Story 015, puis 016 |
 
 ## Consommation par phase
 
