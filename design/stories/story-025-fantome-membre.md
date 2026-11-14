@@ -2,7 +2,7 @@
 
 > **Phase** : Alpha — gate G
 > **Type** : Logic
-> **Statut** : In Progress
+> **Statut** : Done
 
 ## Contexte
 
@@ -20,6 +20,8 @@ Voir un temps ne dit pas où il a été gagné. Rouler contre le fantôme d'un a
 ## Notes d'implémentation
 
 `replayLap` peut renvoyer les échantillons au format `LapSample` déjà lu par `sampleAtTime`.
+
+Preuve du 2026-11-14 : PR #15, commit `39894b6`. La trace rejouée reste à 1 % de la longueur. Sans `ghostInputs`, le bandeau reste sur le record personnel. Le classement authentifié n'a pas été ouvert dans le navigateur.
 
 ## Hors périmètre
 

@@ -11,9 +11,9 @@
 ## Status
 
 - **Statut global** : On Track
-- **Progression** : portes A et D vues dans le navigateur sur un Postgres local temporaire. Healthcheck `/api/health` en 200. Score d'un GP fictif : 29 points au classement. Le second compte Supabase et le Compose restent ouverts. Contre-la-montre : gate F fermé. HUD arcade de la course intégré (`5cdeecc`), story 026 encore ouverte. Gate G ouvert.
+- **Progression** : portes A et D vues dans le navigateur sur un Postgres local temporaire. Healthcheck `/api/health` en 200. Score d'un GP fictif : 29 points au classement. Le second compte Supabase et le Compose restent ouverts. Contre-la-montre : gates E, F et G fermés. Story 026 encore ouverte (menus, records et écran titre).
 - **Blockers** : clés Supabase réelles absentes. Docker n'est pas installé, le Compose n'a pas démarré. Le Postgres de cette preuve vit dans `/tmp` et ne survit pas à un redémarrage.
-- **Dernière mise à jour** : `2026-11-13`
+- **Dernière mise à jour** : `2026-11-14`
 
 ## Contexte
 
@@ -60,7 +60,7 @@
 | 022 | Enregistrer les entrées du tour | Logic | G | Done | `design/stories/story-022-entrees-du-tour.md` |
 | 023 | Soumission et rejeu côté serveur | Integration | G | Done | `design/stories/story-023-soumission-rejeu-serveur.md` |
 | 024 | Classement de ligue du contre-la-montre | Integration | G | Done | `design/stories/story-024-classement-ligue-clm.md` |
-| 025 | Affronter le fantôme d'un membre | Logic | G | Ready | `design/stories/story-025-fantome-membre.md` |
+| 025 | Affronter le fantôme d'un membre | Logic | G | Done | `design/stories/story-025-fantome-membre.md` |
 | 026 | Interface arcade des années 80–90 | UI | Transverse E–G | In Progress | `design/stories/story-026-interface-arcade.md` |
 
 Ordre d'implémentation : 005, puis 001. 002 et 003 en parallèle de 001. Puis 004 et 006. Puis 007, 008, 009, 010. Puis 011 à 014.
@@ -79,7 +79,7 @@ Direction de l'interface du mini jeu : arcade des années 80–90, demandée le 
 | D Hors Vercel | — | Ouvert | Preuve locale. DNS manuel, plus tard |
 | E Chrono honnête | 2026-11-13 | Fermé | Monaco 1:00.644 sans pénalité, Monza 1:12.923 (1,6 s de coupe). Même temps à 60 et 144 Hz. Pilote scripté, pas une main. |
 | F Moteur tenable | 2026-11-14 | Fermé | Monaco 100–127 ms, Spa 138–140 ms, sans GPU. Roues du fantôme sur ses échantillons. |
-| G Classement de ligue du chrono | — | Ouvert | 022 à 025. Dépend de E |
+| G Classement de ligue du chrono | 2026-11-14 | Fermé | 022 à 025 mergées. Affronter rejoue le tour choisi. Classement authentifié non ouvert : pas de Postgres. |
 
 ## Risques projet
 
@@ -89,14 +89,14 @@ Direction de l'interface du mini jeu : arcade des années 80–90, demandée le 
 | 2026-10-06 | Traiter un owner de ligue comme admin des résultats : le calendrier est global | Élevé | Ouvert |
 | 2026-10-06 | `qualifying_position` plafonné à 20 dans Zod, grille visée à 22 | Moyen | Ouvert |
 | 2026-11-13 | Un demi-tour sur la ligne de départ valide un tour (14 s à Monza) : aucun temps n'est comparable avant la story 016 | Critique | Traité |
-| 2026-11-13 | Le rejeu serveur peut différer du client de quelques millisecondes : le temps du serveur doit faire foi (story 023) | Moyen | Ouvert |
+| 2026-11-13 | Le rejeu serveur peut différer du client de quelques millisecondes : le temps du serveur doit faire foi (story 023) | Moyen | Traité |
 
 ## Prochaines actions
 
 1. Renseigner l'URL et la clé anon Supabase dans un `.env` lu par Compose, puis `docker compose up -d` sur le VPS.
 2. Créer un second compte (Google ou lien magique) et vérifier la ligne `profiles`.
 3. Ne pas changer le DNS.
-4. Contre-la-montre : le HUD de 026 est intégré, la story reste ouverte (menus et records des démos). Enchaîner Affronter (025). Ne pas merger la PR #5. `prisma db push` du modèle `TimeTrialLap` n'a pas été lancé.
+4. Contre-la-montre : gate G fermé. Story 026 encore ouverte : menus, options, records des démos et écrans d'attraction deluxe. Le HUD de course reste plat. Ne pas merger la PR #5. `prisma db push` du modèle `TimeTrialLap` n'a pas été lancé.
 
 ## Journal
 
@@ -127,4 +127,5 @@ Direction de l'interface du mini jeu : arcade des années 80–90, demandée le 
 | 2026-11-13 | Story 024 mergée, PR #12, commit `7a9333f`. CI https://github.com/Uly-theU/ligue-fantasy-f1/actions/runs/43484851210 verte. Classement membre, écart au premier. Tableau rempli non vu : pas de base joignable. Gate G encore ouvert (025). |
 | 2026-11-14 | Story 021 mergée, PR #13, commit `314b820`. CI https://github.com/Uly-theU/ligue-fantasy-f1/actions/runs/43540455186 verte. Monaco 100–127 ms, Spa 138–140 ms, sans grille. Gate F fermé. |
 | 2026-11-14 | HUD de la story 026 mergé, PR #14, commit `5cdeecc`. CI https://github.com/Uly-theU/ligue-fantasy-f1/actions/runs/43541176917 verte. Chrono lisible à 1280 et 360. Story 026 encore ouverte. |
+| 2026-11-14 | Story 025 mergée, PR #15, commit `39894b6`. CI https://github.com/Uly-theU/ligue-fantasy-f1/actions/runs/43562923439 verte. Affronter rejoue le tour choisi. Sans choix, le fantôme reste le record personnel. Classement authentifié non ouvert. Gate G fermé. |
 | 2026-10-20 | Preuve locale : Postgres temporaire, seed 22 pilotes / 24 GP, parcours navigateur (ligue, draft, équipe, classement 29 pts). Cron scores 200, ingestion 401 sans secret. |

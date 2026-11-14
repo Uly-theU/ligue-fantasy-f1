@@ -12,7 +12,7 @@
 
 | Métrique | Valeur |
 |----------|--------|
-| Sessions totales | 20 |
+| Sessions totales | 21 |
 | Date première session | 2026-10-06 |
 | Date dernière session | 2026-11-14 |
 
@@ -40,6 +40,7 @@
 | 18 | 2026-11-13 | story 024 | PR #12 mergée (`7a9333f`). CI verte. | Un tour par joueur, écart au premier, membres sans tour en bas. La page a montré l'erreur interne : aucun Postgres joignable. | HUD de 026, puis 025 |
 | 19 | 2026-11-14 | story 021 | PR #13 mergée (`314b820`). CI verte. | Monaco 100–127 ms, Spa 138–140 ms. Pas de grille. Les roues du fantôme suivent ses échantillons. Mesure sans GPU. Gate F fermé. | HUD de 026, puis 025 |
 | 20 | 2026-11-14 | story 026, HUD | PR #14 mergée (`5cdeecc`). CI verte. | Chrono jaune lisible à 1280 et à 360. Commandes sous la piste. Menus et records des démos pas encore réhabillés. Story ouverte. | Story 025 |
+| 21 | 2026-11-14 | story 025 | PR #15 mergée (`39894b6`). CI verte. | Affronter rejoue les entrées du membre choisi. L'écart en course se mesure contre ce fantôme. Sans choix, le record personnel reste. Page authentifiée non ouverte. Gate G fermé. Story 026 encore ouverte. | Menus, records et écran titre de 026 |
 
 ## Consommation par phase
 
