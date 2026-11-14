@@ -11,7 +11,7 @@
 ## Status
 
 - **Statut global** : On Track
-- **Progression** : portes A et D vues dans le navigateur sur un Postgres local temporaire. Healthcheck `/api/health` en 200. Score d'un GP fictif : 29 points au classement. Le second compte Supabase et le Compose restent ouverts. Contre-la-montre : gate F fermé (`314b820`). Monaco se construit en 100–127 ms, Spa en 138–140 ms. Les roues du fantôme suivent ses échantillons. Gate G ouvert.
+- **Progression** : portes A et D vues dans le navigateur sur un Postgres local temporaire. Healthcheck `/api/health` en 200. Score d'un GP fictif : 29 points au classement. Le second compte Supabase et le Compose restent ouverts. Contre-la-montre : gate F fermé. HUD arcade de la course intégré (`5cdeecc`), story 026 encore ouverte. Gate G ouvert.
 - **Blockers** : clés Supabase réelles absentes. Docker n'est pas installé, le Compose n'a pas démarré. Le Postgres de cette preuve vit dans `/tmp` et ne survit pas à un redémarrage.
 - **Dernière mise à jour** : `2026-11-13`
 
@@ -96,7 +96,7 @@ Direction de l'interface du mini jeu : arcade des années 80–90, demandée le 
 1. Renseigner l'URL et la clé anon Supabase dans un `.env` lu par Compose, puis `docker compose up -d` sur le VPS.
 2. Créer un second compte (Google ou lien magique) et vérifier la ligne `profiles`.
 3. Ne pas changer le DNS.
-4. Contre-la-montre : gate F fermé. Le HUD de 026 est en cours dans `time-trial.tsx`. Affronter (025) attend ce HUD. Ne pas merger la PR #5. `prisma db push` du modèle `TimeTrialLap` n'a pas été lancé.
+4. Contre-la-montre : le HUD de 026 est intégré, la story reste ouverte (menus et records des démos). Enchaîner Affronter (025). Ne pas merger la PR #5. `prisma db push` du modèle `TimeTrialLap` n'a pas été lancé.
 
 ## Journal
 
@@ -126,4 +126,5 @@ Direction de l'interface du mini jeu : arcade des années 80–90, demandée le 
 | 2026-11-13 | Story 020 mergée, PR #11, commit `780549d`. CI https://github.com/Uly-theU/ligue-fantasy-f1/actions/runs/43484426136 verte. Vingt courses : 20 contextes créés et perdus, aucun restauré. Gate F encore ouvert (021). |
 | 2026-11-13 | Story 024 mergée, PR #12, commit `7a9333f`. CI https://github.com/Uly-theU/ligue-fantasy-f1/actions/runs/43484851210 verte. Classement membre, écart au premier. Tableau rempli non vu : pas de base joignable. Gate G encore ouvert (025). |
 | 2026-11-14 | Story 021 mergée, PR #13, commit `314b820`. CI https://github.com/Uly-theU/ligue-fantasy-f1/actions/runs/43540455186 verte. Monaco 100–127 ms, Spa 138–140 ms, sans grille. Gate F fermé. |
+| 2026-11-14 | HUD de la story 026 mergé, PR #14, commit `5cdeecc`. CI https://github.com/Uly-theU/ligue-fantasy-f1/actions/runs/43541176917 verte. Chrono lisible à 1280 et 360. Story 026 encore ouverte. |
 | 2026-10-20 | Preuve locale : Postgres temporaire, seed 22 pilotes / 24 GP, parcours navigateur (ligue, draft, équipe, classement 29 pts). Cron scores 200, ingestion 401 sans secret. |
