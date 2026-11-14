@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildRecord, crossedSector, deltaAt, formatDelta, parseRecord, sampleAtTime, timeAtS, type LapSample } from '@/lib/clm-record';
+import { buildRecord, crossedSector, deltaAt, formatDelta, parseRecord, sampleAtTime, speedAtS, timeAtS, type LapSample } from '@/lib/clm-record';
 
 const samples: LapSample[] = [
   { t: 0, s: 0, x: 0, y: 0, h: 0 },
@@ -8,6 +8,13 @@ const samples: LapSample[] = [
 ];
 
 describe('record de tour', () => {
+  it('lit la vitesse au sol sur le segment du record', () => {
+    expect(speedAtS(samples, 50)).toBeCloseTo(10);
+    expect(speedAtS(samples, 150)).toBeCloseTo(Math.hypot(100, 20) / 20);
+    expect(speedAtS(samples, -10)).toBeCloseTo(10);
+    expect(speedAtS([samples[0]], 0)).toBe(0);
+  });
+
   it('situe le temps du record à une distance', () => {
     expect(timeAtS(samples, 50)).toBeCloseTo(5);
     expect(timeAtS(samples, 150)).toBeCloseTo(20);

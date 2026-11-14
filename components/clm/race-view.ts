@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { biomeFor } from '@/lib/circuit-biome';
 import { CAR_WIDTH_M, metersPerUnit, ROAD_WIDTH_M, topSpeed } from '@/lib/clm';
 import type { TrackSign } from '@/lib/circuit-places';
+import { speedAtS, type LapSample } from '@/lib/clm-record';
 import type { ElevationSample } from '@/lib/grade';
 import type { Track } from '@/lib/track-path';
 import { createCameraRig, frameCamera } from './race/camera';
@@ -27,6 +28,8 @@ export type RaceCamera = 'chase' | 'cockpit';
 export type RaceFrame = {
   car: RacePose & { speed: number; steer: number; brake: number; offTrack: boolean };
   ghost: RacePose | null;
+  /** Échantillons du record. Présents, ils donnent la vitesse des roues du fantôme. */
+  ghostSamples?: LapSample[];
   blend: number;
   camHeading: number;
   phase: RacePhase;
@@ -58,6 +61,8 @@ export class RaceView {
   private readonly lamps: THREE.MeshStandardMaterial;
   private readonly motion = createCarMotion();
   private readonly framing: ReturnType<typeof createCameraRig>;
+  /** Dernière position du fantôme, pour lire sa vitesse quand l'image n'apporte pas les échantillons. */
+  private ghostMark: { x: number; y: number } | null = null;
 
   constructor(host: HTMLElement, track: Track, lengthKm: number, elevation?: ElevationSample[], signs: TrackSign[] = [], circuitId?: string | null) {
     this.host = host;
@@ -181,9 +186,11 @@ export class RaceView {
     setBrakeLight(this.player, frame.car.brake);
     if (frame.ghost) {
       this.ghost.root.visible = true;
-      placeCar(this.motion, this.ctx, this.ghost, frame.ghost, 0, frame.car.speed, step, true);
+      placeCar(this.motion, this.ctx, this.ghost, frame.ghost, 0, this.ghostSpeed(frame, step), step, true);
+      this.ghostMark = { x: frame.ghost.x, y: frame.ghost.y };
     } else {
       this.ghost.root.visible = false;
+      this.ghostMark = null;
     }
 
     setGantryLights(this.lamps, frame.phase === 'countdown', frame.go);
@@ -241,6 +248,19 @@ export class RaceView {
       released.add(object);
       object.dispose();
     });
+  }
+
+  /**
+   * Les roues suivent le fantôme, pas le joueur.
+   * Avec les échantillons du record, la vitesse est celle du segment en cours.
+   * Sans eux, c'est le déplacement du fantôme depuis l'image précédente.
+   */
+  private ghostSpeed(frame: RaceFrame, step: number): number {
+    const ghost = frame.ghost;
+    if (!ghost) return 0;
+    if (frame.ghostSamples) return speedAtS(frame.ghostSamples, ghost.s);
+    if (!this.ghostMark || !(step > 0)) return 0;
+    return Math.hypot(ghost.x - this.ghostMark.x, ghost.y - this.ghostMark.y) / step;
   }
 
   private canvasRemove() {
