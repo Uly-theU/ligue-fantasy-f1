@@ -2,7 +2,7 @@
 
 > **Phase** : Alpha — transverse E, F, G
 > **Type** : UI
-> **Statut** : In Progress
+> **Statut** : Done
 
 ## Contexte
 
@@ -15,7 +15,7 @@ Les menus, le tableau de bord et les records doivent évoquer une borne d'arcade
 ## Critères d'acceptation
 
 - [x] Une proposition visuelle desktop et mobile couvre le menu, la sélection de circuit, le HUD en course et les résultats ; elle sert de référence à l'implémentation.
-- [ ] Menus, options, records et résultats partagent des composants et des styles communs entre les démos et l'application.
+- [x] Menus, options, records et résultats partagent des composants et des styles communs entre les démos et l'application.
 - [x] Titres bitmap ou anguleux, chiffres monospaces lisibles, palette bleu nuit/noir/blanc avec accents jaune, cyan et rouge, panneaux rectangulaires et damiers constituent une direction cohérente. L'écran titre et les résultats ajoutent le mot extrudé, les autocollants et les rayons de la référence deluxe. Le HUD de course reste plat.
 - [x] Le chrono, la vitesse, les secteurs et l'écart restent lisibles sur la piste en mouvement. Départ, pénalité et nouveau record ont des états visuels distincts.
 - [x] Le classement de 024 reprend la présentation des meilleurs temps, avec mise en avant du joueur connecté et action « Affronter » de 025 si disponible.
@@ -41,6 +41,10 @@ La référence deluxe du 2026-11-13 précise les écrans d'attraction, de résul
 ### Tranche deluxe — 2026-11-14
 
 PR #16, commit `87c667a`. Les démos Monaco et saison, l'arrivée et le classement partagent `Habillage`. Les rayons ne sont que sur le titre et les résultats. Le chrono de course garde `filter: none` et `animation: none`. À 360 px, `scrollWidth` vaut 360. L'arrivée réelle n'a pas été conduite : `monaco.html?ecran=arrivee` montre l'écran scripté. Le classement authentifié n'a pas été ouvert. Il reste l'en-tête et le sélecteur de `app/clm/page.tsx`, encore dans le style du site.
+
+### Page `/clm` — 2026-11-14
+
+PR #17, commit `53e167c`. L'en-tête, les faits, le lore et le sélecteur passent par `EnteteClm` et `Habillage`. Les rayons restent sur ce titre. `TimeTrial` garde `track`, `gameweekId`, `elevation`, `signs` et reçoit `circuitName`. Cinq tests ciblés verts. Les captures de cette page n'ont pas été enregistrées : l'outil de capture n'a pas répondu. `/clm` n'a pas été ouvert connecté.
 
 ## Hors périmètre
 

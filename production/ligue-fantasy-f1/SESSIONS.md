@@ -12,7 +12,7 @@
 
 | Métrique | Valeur |
 |----------|--------|
-| Sessions totales | 22 |
+| Sessions totales | 23 |
 | Date première session | 2026-10-06 |
 | Date dernière session | 2026-11-14 |
 
@@ -42,6 +42,7 @@
 | 20 | 2026-11-14 | story 026, HUD | PR #14 mergée (`5cdeecc`). CI verte. | Chrono jaune lisible à 1280 et à 360. Commandes sous la piste. Menus et records des démos pas encore réhabillés. Story ouverte. | Story 025 |
 | 21 | 2026-11-14 | story 025 | PR #15 mergée (`39894b6`). CI verte. | Affronter rejoue les entrées du membre choisi. L'écart en course se mesure contre ce fantôme. Sans choix, le record personnel reste. Page authentifiée non ouverte. Gate G fermé. Story 026 encore ouverte. | Menus, records et écran titre de 026 |
 | 22 | 2026-11-14 | story 026, écrans | PR #16 mergée (`87c667a`). CI verte. | Démos, arrivée et classement en langage deluxe. Chrono de course plat. L'arrivée n'a pas été conduite. La page `/clm` garde l'en-tête du site. | En-tête et sélecteur de `/clm` |
+| 23 | 2026-11-14 | story 026, page | PR #17 mergée (`53e167c`). CI verte. | L'en-tête et le sélecteur de `/clm` reprennent la borne. Cinq tests verts. Pas de capture : l'outil n'a pas répondu. Page non ouverte connectée. Story 026 fermée. | Écrire les stories de la V2 avant de coder les gates H à L |
 
 ## Consommation par phase
 
