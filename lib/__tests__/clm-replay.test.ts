@@ -10,6 +10,7 @@ import {
   type ClmInputSpan,
   type LapInputLog,
 } from '@/lib/clm-replay';
+import { deltaAt, sampleAtTime, type LapRecord } from '@/lib/clm-record';
 import { pointAt, trackFromSvg, type Track } from '@/lib/track-path';
 
 const ANNEAU = '<svg xmlns="http://www.w3.org/2000/svg"><path stroke-width="48" d="M280 40 A 240 240 0 1 1 279.5 40 Z"/></svg>';
@@ -99,13 +100,40 @@ describe('entrées du tour', () => {
     const parsed = await parseLapInputs(serialized);
     expect(parsed).toEqual(log.spans);
   });
+
+  it('reconstruit une trace qui passe par les mêmes abscisses, à 1 % près', () => {
+    const track = trackFromSvg(ANNEAU)!;
+    const driven = driveLap(track, LENGTH_KM);
+    expect(driven.car.finished).toBe(true);
+    expect(driven.trace.length).toBeGreaterThan(10);
+
+    const replay = replayLap(track, driven.log.spans, { lengthKm: LENGTH_KM });
+    expect(replay.completed).toBe(true);
+    if (!replay.completed) return;
+    expect(replay.samples.length).toBeGreaterThan(1);
+    const ghost: LapRecord = {
+      time: replay.time,
+      sectors: replay.sectors,
+      samples: replay.samples,
+    };
+
+    for (const step of driven.trace) {
+      const back = sampleAtTime(replay.samples, step.t);
+      expect(back).not.toBeNull();
+      expect(Math.abs(back!.s - step.s)).toBeLessThanOrEqual(track.length * 0.01);
+      const gap = deltaAt(ghost, step.s, step.t);
+      expect(gap).not.toBeNull();
+      expect(Math.abs(gap!)).toBeLessThanOrEqual(Math.max(step.t, 1) * 0.01);
+    }
+  });
 });
 
-function driveLap(track: Track, lengthKm: number): { car: ClmCar; log: LapInputLog } {
+function driveLap(track: Track, lengthKm: number): { car: ClmCar; log: LapInputLog; trace: Array<{ t: number; s: number }> } {
   const max = topSpeed(track, lengthKm);
   let car = createCar(track);
   let wheel = 0;
   const log = createLapInputLog();
+  const trace: Array<{ t: number; s: number }> = [];
   for (let n = 0; n < 120 * 150 && !car.finished; n += 1) {
     const look = pointAt(track, car.s + track.halfWidth * 4);
     const aim = Math.atan2(look.y - car.y, look.x - car.x);
@@ -116,8 +144,9 @@ function driveLap(track: Track, lengthKm: number): { car: ClmCar; log: LapInputL
     const input = { steer, brake: 0, throttle: 1 };
     recordLapInput(log, input);
     car = stepClm(track, car, input, CLM_STEP_SECONDS, lengthKm);
+    trace.push(car.finished ? { t: car.time, s: track.length } : { t: car.time, s: car.s });
   }
-  return { car, log };
+  return { car, log, trace };
 }
 
 /** Tenue clavier : la cible ne change qu’une fois par seconde, au plus. */

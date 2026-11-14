@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 import { buildRecord, crossedSector, deltaAt, formatDelta, parseRecord, sampleAtTime, type LapRecord, type LapSample } from '@/lib/clm-record';
 import './arcade/arcade.css';
-import { createLapInputLog, recordLapInput, serializeLapInputs, type ClmInputSpan, type LapInputLog } from '@/lib/clm-replay';
+import { createLapInputLog, recordLapInput, replayLap, serializeLapInputs, type ClmInputSpan, type LapInputLog } from '@/lib/clm-replay';
 import { apiFetch } from '@/lib/api';
 import { biomeFor } from '@/lib/circuit-biome';
 import { CLM_STEP_SECONDS, clmStepAlpha, createCar, crossingFraction, formatLap, interpolateClmPose, rampSteer, RUNOFF_RATIO, speedKmh, steerResponse, stepClm, STREET_RUNOFF_RATIO, takeClmSteps, topSpeed, type ClmCar } from '@/lib/clm';
@@ -64,6 +64,8 @@ type Sim = {
   blend: number;
   camHeading: number;
   record: LapRecord | null;
+  /** Fantôme choisi dans le classement. Absent : le record personnel. */
+  ghost: LapRecord | null;
   samples: LapSample[];
   best: number | null;
   improved: boolean;
@@ -130,6 +132,7 @@ export function TimeTrial({
   circuitName,
   onLeave,
   leaveLabel = 'Menu',
+  ghostInputs = null,
 }: {
   track: Track;
   lengthKm: number;
@@ -139,6 +142,8 @@ export function TimeTrial({
   gameweekId?: string | null;
   /** Vue choisie dans les options. Absente : on relit `clm-camera`. */
   camera?: RaceCamera;
+  /** Entrées d'un tour de ligue. Absentes : fantôme du record personnel. */
+  ghostInputs?: readonly ClmInputSpan[] | null;
   /** Nom affiché dans le bandeau. Absent : l'identifiant du circuit. */
   circuitName?: string;
   onLeave?: () => void;
@@ -237,6 +242,8 @@ export function TimeTrial({
 
     const car = createCar(track);
     const record = readRecord(circuitId);
+    const runoff = biomeFor(circuitId).walls ? STREET_RUNOFF_RATIO : RUNOFF_RATIO;
+    const ghost = rivalGhost(track, lengthKm, elevation, runoff, ghostInputs);
     const sim: Sim = {
       car,
       previous: car,
@@ -247,8 +254,9 @@ export function TimeTrial({
       blend: 0,
       camHeading: car.heading,
       record,
+      ghost,
       samples: [],
-      best: record?.time ?? null,
+      best: ghost?.time ?? record?.time ?? null,
       improved: false,
       delta: null,
       gap: null,
@@ -350,14 +358,28 @@ export function TimeTrial({
             const avant = sector === 1 ? 0 : (sim.marks[sector - 2] ?? 0);
             sim.marks[sector - 1] = at;
             sim.splits[sector - 1] = at - avant;
-            if (sim.record?.sectors) {
-              sim.sector = { sector, delta: at - sim.record.sectors[sector - 1], until: now + 1600 };
+            const cible = chasedLap(sim);
+            if (cible?.sectors) {
+              sim.sector = { sector, delta: at - cible.sectors[sector - 1], until: now + 1600 };
             }
           }
-          sim.delta = sim.record && sim.record.samples.length > 1 ? deltaAt(sim.record, sim.car.s, sim.car.time) : null;
+          const cible = chasedLap(sim);
+          sim.delta = cible && cible.samples.length > 1 ? deltaAt(cible, sim.car.s, sim.car.time) : null;
             if (sim.car.finished) {
             if (sim.marks[1] != null) sim.splits[2] = sim.car.time - sim.marks[1];
             sim.samples.push({ t: sim.car.time, s: track.length, x: sim.car.x, y: sim.car.y, h: sim.car.heading });
+            if (sim.ghost && sim.ghost.samples.length > 1) {
+              sim.gap = sim.car.time - sim.ghost.time;
+              sim.improved = sim.car.time < sim.ghost.time;
+              sim.sector = { sector: 3, delta: sim.gap, until: now + 1600 };
+              const ownReplayable = (sim.record?.samples.length ?? 0) > 1;
+              const ownPrevious = ownReplayable ? sim.record!.time : null;
+              if (ownPrevious == null || sim.car.time < ownPrevious) {
+                const record = buildRecord(sim.car.time, sim.samples, track.length);
+                sim.record = record;
+                writeRecord(circuitId, record);
+              }
+            } else {
             const replayable = (sim.record?.samples.length ?? 0) > 1;
             const previous = replayable ? sim.best : null;
             sim.gap = previous == null ? null : sim.car.time - previous;
@@ -370,6 +392,7 @@ export function TimeTrial({
               writeRecord(circuitId, record);
             } else if (sim.gap != null) {
               sim.sector = { sector: 3, delta: sim.gap, until: now + 1600 };
+            }
             }
             sim.phase = 'finished';
             sim.previous = sim.car;
@@ -403,8 +426,9 @@ export function TimeTrial({
       const shownTime = sim.previous.time + (sim.car.time - sim.previous.time) * clmStepAlpha(shown ? sim.leftover : 0);
       const turn = Math.atan2(Math.sin(pose.heading - sim.camHeading), Math.cos(pose.heading - sim.camHeading));
       sim.camHeading += turn * (1 - Math.exp(-frameSeconds * 7));
-      const ghost = shown && sim.record && sim.record.samples.length > 1
-        ? sampleAtTime(sim.record.samples, shownTime)
+      const cible = chasedLap(sim);
+      const shownGhost = shown && cible && cible.samples.length > 1
+        ? sampleAtTime(cible.samples, shownTime)
         : null;
       view?.render({
         car: {
@@ -417,7 +441,8 @@ export function TimeTrial({
           brake: sim.car.brake,
           offTrack: sim.car.offTrack,
         },
-        ghost: ghost ? { x: ghost.x, y: ghost.y, heading: ghost.h, s: ghost.s } : null,
+        ghost: shownGhost ? { x: shownGhost.x, y: shownGhost.y, heading: shownGhost.h, s: shownGhost.s } : null,
+        ghostSamples: sim.ghost && sim.ghost.samples.length > 1 ? sim.ghost.samples : undefined,
         blend: sim.blend,
         camHeading: sim.camHeading,
         phase: sim.phase,
@@ -441,7 +466,7 @@ export function TimeTrial({
       engineRef.current = null;
       view?.dispose();
     };
-  }, [track, lengthKm, circuitId, elevation, signs, gameweekId]);
+  }, [track, lengthKm, circuitId, elevation, signs, gameweekId, ghostInputs]);
 
   function begin(sim: Sim, now: number) {
     sim.phase = 'countdown';
@@ -775,7 +800,7 @@ function snapshot(sim: Sim, lengthKm: number, track: Track, now = 0, elevation?:
     delta: sim.phase === 'racing' ? sim.delta : null,
     gap: sim.gap,
     sector: sim.sector && now < sim.sector.until ? sim.sector : null,
-    chasing: (sim.record?.samples.length ?? 0) > 1,
+    chasing: (chasedLap(sim)?.samples.length ?? 0) > 1,
     accel: sim.phase === 'racing' ? sim.car.accel : 0,
     brake: sim.phase === 'racing' ? sim.car.brake : 0,
     steer: sim.phase === 'racing' ? sim.steer : 0,
@@ -786,6 +811,25 @@ function snapshot(sim: Sim, lengthKm: number, track: Track, now = 0, elevation?:
     rescued: sim.phase === 'racing' && now < sim.rescuedUntil,
     splits: sim.splits,
   };
+}
+
+/** Le tour choisi dans le classement, sinon le record personnel. */
+function chasedLap(sim: Sim): LapRecord | null {
+  if (sim.ghost && sim.ghost.samples.length > 1) return sim.ghost;
+  return sim.record;
+}
+
+function rivalGhost(
+  track: Track,
+  lengthKm: number,
+  elevation: ElevationSample[] | undefined,
+  runoff: number,
+  inputs: readonly ClmInputSpan[] | null | undefined,
+): LapRecord | null {
+  if (!inputs || inputs.length === 0) return null;
+  const replay = replayLap(track, inputs, { lengthKm, elevation, runoff });
+  if (!replay.completed || replay.samples.length < 2) return null;
+  return { time: replay.time, sectors: replay.sectors, samples: replay.samples };
 }
 
 function readRecord(circuitId: string): LapRecord | null {
@@ -937,7 +981,7 @@ function drawMinimap(
   ctx.strokeStyle = "rgba(255,255,255,0.85)";
   ctx.lineWidth = track.halfWidth * 1.15;
   ctx.stroke();
-  const ghost = sim.phase === "racing" && sim.record ? sampleAtTime(sim.record.samples, time) : null;
+  const ghost = sim.phase === "racing" ? sampleAtTime(chasedLap(sim)?.samples ?? [], time) : null;
   if (ghost) {
     ctx.fillStyle = "rgba(255,255,255,0.85)";
     ctx.beginPath();

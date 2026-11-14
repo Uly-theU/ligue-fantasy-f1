@@ -51,4 +51,24 @@ describe('HUD du contre-la-montre', () => {
     expect(screen.getByRole('button', { name: 'Droite' })).toBeVisible();
     expect(screen.getByRole('button', { name: 'Frein' })).toBeVisible();
   });
+
+  it('sans choix, affiche le fantôme du record personnel', async () => {
+    localStorage.setItem('clm-record:v5:essai', JSON.stringify({
+      time: 99,
+      sectors: [30, 60, 99],
+      samples: [
+        { t: 0, s: 0, x: 0, y: 0, h: 0 },
+        { t: 99, s: 40, x: 40, y: 0, h: 0 },
+      ],
+    }));
+    render(
+      <TimeTrial
+        track={track}
+        lengthKm={1}
+        circuitId="essai"
+        camera="chase"
+      />,
+    );
+    expect(await screen.findByText(/Reste devant le fantôme/)).toHaveTextContent('1:39.000');
+  });
 });
