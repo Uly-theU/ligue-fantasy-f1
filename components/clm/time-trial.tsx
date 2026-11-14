@@ -1,8 +1,8 @@
 'use client';
 
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
-import { Button } from '@/components/ui/button';
 import { buildRecord, crossedSector, deltaAt, formatDelta, parseRecord, sampleAtTime, type LapRecord, type LapSample } from '@/lib/clm-record';
+import './arcade/arcade.css';
 import { createLapInputLog, recordLapInput, serializeLapInputs, type ClmInputSpan, type LapInputLog } from '@/lib/clm-replay';
 import { apiFetch } from '@/lib/api';
 import { biomeFor } from '@/lib/circuit-biome';
@@ -21,6 +21,10 @@ type SectorNote = {
   delta: number;
   until: number;
 };
+
+type SectorSplits = [number | null, number | null, number | null];
+
+const EMPTY_SPLITS: SectorSplits = [null, null, null];
 
 type Hud = {
   phase: Phase;
@@ -45,6 +49,7 @@ type Hud = {
   cut: number | null;
   penalty: number;
   rescued: boolean;
+  splits: SectorSplits;
 };
 
 type Sim = {
@@ -69,6 +74,9 @@ type Sim = {
   steer: number;
   cut: { seconds: number; until: number } | null;
   rescuedUntil: number;
+  /** Temps cumulés aux lignes de secteur, pour l'affichage seulement. */
+  marks: SectorSplits;
+  splits: SectorSplits;
   /** Entrées réellement passées à stepClm, une plage par valeur tenue. */
   inputs: LapInputLog;
 };
@@ -105,6 +113,7 @@ const EMPTY_HUD: Hud = {
   cut: null,
   penalty: 0,
   rescued: false,
+  splits: EMPTY_SPLITS,
 };
 
 /** Le prochain virage s'annonce à cette distance. */
@@ -118,6 +127,9 @@ export function TimeTrial({
   signs,
   gameweekId = null,
   camera: cameraProp,
+  circuitName,
+  onLeave,
+  leaveLabel = 'Menu',
 }: {
   track: Track;
   lengthKm: number;
@@ -127,6 +139,10 @@ export function TimeTrial({
   gameweekId?: string | null;
   /** Vue choisie dans les options. Absente : on relit `clm-camera`. */
   camera?: RaceCamera;
+  /** Nom affiché dans le bandeau. Absent : l'identifiant du circuit. */
+  circuitName?: string;
+  onLeave?: () => void;
+  leaveLabel?: string;
 }) {
   const hostRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<HTMLCanvasElement>(null);
@@ -241,6 +257,8 @@ export function TimeTrial({
       steer: 0,
       cut: null,
       rescuedUntil: 0,
+      marks: [null, null, null],
+      splits: [null, null, null],
       inputs: createLapInputLog(),
     };
     simRef.current = sim;
@@ -324,15 +342,21 @@ export function TimeTrial({
           }
           rememberSample(sim, track.length);
           const sector = crossedSector(prevS, sim.car.s, track.length);
-          if (sector && sim.record?.sectors) {
+          if (sector) {
             const fraction = crossingFraction(prevS, sim.car.s, (sector * track.length) / 3, track.length);
             const penalty = sim.car.penalty - prevPenalty;
             const driven = sim.car.time - prevTime - penalty;
             const at = prevTime + (fraction == null ? driven : fraction * driven) + penalty;
-            sim.sector = { sector, delta: at - sim.record.sectors[sector - 1], until: now + 1600 };
+            const avant = sector === 1 ? 0 : (sim.marks[sector - 2] ?? 0);
+            sim.marks[sector - 1] = at;
+            sim.splits[sector - 1] = at - avant;
+            if (sim.record?.sectors) {
+              sim.sector = { sector, delta: at - sim.record.sectors[sector - 1], until: now + 1600 };
+            }
           }
           sim.delta = sim.record && sim.record.samples.length > 1 ? deltaAt(sim.record, sim.car.s, sim.car.time) : null;
-          if (sim.car.finished) {
+            if (sim.car.finished) {
+            if (sim.marks[1] != null) sim.splits[2] = sim.car.time - sim.marks[1];
             sim.samples.push({ t: sim.car.time, s: track.length, x: sim.car.x, y: sim.car.y, h: sim.car.heading });
             const replayable = (sim.record?.samples.length ?? 0) > 1;
             const previous = replayable ? sim.best : null;
@@ -429,6 +453,8 @@ export function TimeTrial({
     sim.sector = null;
     sim.cut = null;
     sim.rescuedUntil = 0;
+    sim.marks = [null, null, null];
+    sim.splits = [null, null, null];
     sim.inputs = createLapInputLog();
     clearOfficial();
   }
@@ -449,6 +475,8 @@ export function TimeTrial({
     sim.sector = null;
     sim.cut = null;
     sim.rescuedUntil = 0;
+    sim.marks = [null, null, null];
+    sim.splits = [null, null, null];
     sim.inputs = createLapInputLog();
     clearOfficial();
   }
@@ -492,137 +520,207 @@ export function TimeTrial({
 
   const displayedTime = hud.phase === 'finished' && officialTime != null ? officialTime : hud.time;
   const live = liveMessage(hud, displayedTime);
+  const timeLabel = formatLap(hud.phase === 'ready' || hud.phase === 'countdown' ? 0 : displayedTime);
+  const ecart = hud.phase === 'racing' && hud.delta != null
+    ? hud.delta
+    : hud.phase === 'finished' && hud.gap != null
+      ? hud.gap
+      : null;
+  const nomCircuit = circuitName ?? circuitId;
 
   return (
-    <div role="application" aria-label="Contre-la-montre. Haut pour accélérer, flèches pour tourner, espace pour freiner.">
-      <p className="sr-only" aria-live="polite">{live}</p>
-      <div className={`relative overflow-hidden rounded-3xl border bg-[#100c28] ${hud.offTrack ? 'border-ember/80' : hud.unbalanced ? 'border-amber-400/80' : hud.atLimit ? 'border-amber-200/50' : 'border-white/15'}`}>
-        <div ref={hostRef} className="h-[min(68vh,720px)] min-h-[420px] w-full bg-[#8eb6d6]" />
-        <canvas
-          ref={mapRef}
-          aria-hidden
-          className={`pointer-events-none absolute right-3 top-3 h-24 w-24 rounded-2xl border border-white/20 shadow-lg transition-opacity duration-300 sm:right-4 sm:top-4 sm:h-32 sm:w-32 ${hud.phase === 'ready' ? 'opacity-0' : 'opacity-100'}`}
-        />
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_58%,rgba(12,10,28,0.28)_100%)]" />
-        <div className="pointer-events-none absolute inset-x-0 top-0 flex items-start justify-between gap-4 p-4">
+    <div className="clm-arcade" role="application" aria-label="Contre-la-montre. Haut pour accélérer, flèches pour tourner, espace pour freiner.">
+      <p className="clm-arcade__sr" aria-live="polite">{live}</p>
+      <div className="clm-arcade__course">
+        <header className="clm-arcade__marquee">
           <div>
-            <p className="text-[11px] uppercase tracking-[0.18em] text-white/55">Chrono</p>
-            <p className="font-mono text-4xl tabular-nums leading-none">{formatLap(hud.phase === 'ready' || hud.phase === 'countdown' ? 0 : displayedTime)}</p>
-            {hud.phase === 'racing' && hud.delta != null && (
-              <p className={`mt-2 font-mono text-2xl tabular-nums leading-none ${hud.delta <= 0 ? 'text-emerald-400' : 'text-ember'}`}>{formatDelta(hud.delta)}</p>
-            )}
-            <p className="mt-2 text-[11px] uppercase tracking-[0.18em] text-white/55">À battre {hud.best == null ? '—' : formatLap(hud.best)}</p>
+            <h1 className="clm-arcade__titre">Contre-la-montre</h1>
+            <p className="clm-arcade__sous-titre">Ligue Fantasy F1</p>
           </div>
-        </div>
-        {hud.corner && (
-          <div aria-hidden className="pointer-events-none absolute left-1/2 top-4 flex -translate-x-1/2 items-center gap-2 rounded-xl bg-[#100c28]/80 px-3 py-1.5 backdrop-blur-sm">
-            <span className="rounded bg-[#ffd21f] px-1.5 font-mono text-lg font-bold leading-tight text-[#15123a]">{hud.corner.number}</span>
-            {hud.corner.name && <span className="text-sm font-semibold">{hud.corner.name}</span>}
-            <span className="font-mono text-xs tabular-nums text-white/60">{Math.round(hud.corner.meters / 10) * 10} m</span>
-          </div>
-        )}
-        {hud.rescued && (
-          <div className="pointer-events-none absolute left-1/2 top-16 -translate-x-1/2">
-            <p className="text-2xl font-semibold text-amber-300">Remis en piste</p>
-          </div>
-        )}
-        {hud.cut != null && (
-          <div className="pointer-events-none absolute left-1/2 top-16 -translate-x-1/2">
-            <p className="font-mono text-2xl font-semibold tabular-nums text-ember">Virage coupé +{hud.cut.toFixed(1)} s</p>
-          </div>
-        )}
-        {hud.sector && (
-          <div className="pointer-events-none absolute left-1/2 top-28 -translate-x-1/2">
-            <p className={`font-mono text-3xl tabular-nums ${hud.sector.delta <= 0 ? 'text-emerald-400' : 'text-ember'}`}>
-              S{hud.sector.sector} {formatDelta(hud.sector.delta)}
-            </p>
-          </div>
-        )}
-        <div className="pointer-events-none absolute bottom-4 left-4">
-          <p className="font-mono text-2xl tabular-nums">
-            {Math.round(hud.kmh)}
-            <span className="ml-1 text-sm text-white/60">km/h</span>
-          </p>
-          {hud.offTrack && <p className="text-sm font-medium text-ember">Hors piste</p>}
-          {hud.unbalanced && <p className="text-sm font-medium text-amber-300">Déséquilibre</p>}
-          {hud.atLimit && <p className="text-sm font-medium text-amber-100">Limite</p>}
-        </div>
-        <div aria-hidden className="pointer-events-none absolute bottom-4 right-4 w-40 space-y-2 rounded-2xl bg-[#100c28]/85 px-3 py-2 backdrop-blur-sm">
-          {hud.grade != null && <SlopeReadout grade={hud.grade} />}
-          <SteerGauge value={hud.steer} />
-          <Pedal label="Accélération" value={hud.accel} tone="accel" />
-          <Pedal label="Freinage" value={hud.brake} tone="brake" />
-        </div>
+          <p className="clm-arcade__sous-titre">{nomCircuit}</p>
+          {onLeave ? (
+            <button type="button" onClick={onLeave}>{leaveLabel}</button>
+          ) : null}
+        </header>
 
-        {hud.phase === 'ready' && (
-          <div className="absolute inset-0 flex items-end justify-center bg-gradient-to-t from-[#100c28]/80 to-transparent p-6">
-            <div className="mb-2 max-w-md text-center">
-              <p className="mb-4 text-sm text-white/75">
-                {hud.best == null
-                  ? 'Premier passage : ce tour devient le record à battre.'
-                  : hud.chasing
-                    ? `Record ${formatLap(hud.best)}. Reste devant le fantôme.`
-                    : `Record ${formatLap(hud.best)}. Ce tour devient le passage à battre.`}
-              </p>
-              <Button type="button" onClick={start} className="pointer-events-auto">Feu vert</Button>
+        <section className="clm-arcade__chiffres" aria-label="Indicateurs de course">
+          <div className="clm-arcade__bloc-chrono">
+            <span className="clm-arcade__legend">Chrono</span>
+            <strong className="clm-arcade__chrono" role="timer">{timeLabel}</strong>
+          </div>
+          <div>
+            <span className="clm-arcade__legend">Vitesse</span>
+            <strong className="clm-arcade__chiffre">
+              {Math.round(hud.kmh)}
+              <span className="clm-arcade__unite">km/h</span>
+            </strong>
+          </div>
+          <div>
+            <span className="clm-arcade__legend">Écart</span>
+            <strong className={`clm-arcade__chiffre ${deltaTone(ecart)}`.trim()}>
+              {ecart == null ? '—' : formatDelta(ecart)}
+            </strong>
+          </div>
+          <ul className="clm-arcade__secteurs">
+            {SECTOR_LABELS.map((label, index) => {
+              const flash = hud.sector?.sector === index + 1 ? hud.sector.delta : null;
+              return (
+                <li key={label}>
+                  <span className="clm-arcade__legend">{label}</span>
+                  <span className="clm-arcade__chiffre">{formatSplit(hud.splits[index] ?? null)}</span>
+                  {flash != null ? (
+                    <span className={`clm-arcade__chiffre ${deltaTone(flash)}`.trim()}>{formatDelta(flash)}</span>
+                  ) : null}
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+
+        <div className="clm-arcade__scene">
+          <div className="clm-arcade__tube">
+            <div className="clm-arcade__piste-live">
+              <div ref={hostRef} className="clm-arcade__ecran" />
+              <canvas
+                ref={mapRef}
+                aria-hidden
+                className={hud.phase === 'ready' ? 'clm-arcade__minimap clm-arcade__minimap--cache' : 'clm-arcade__minimap'}
+              />
+              {hud.corner && (
+                <div aria-hidden className="clm-arcade__virage">
+                  <span className="clm-arcade__virage-num">{hud.corner.number}</span>
+                  {hud.corner.name ? <span>{hud.corner.name}</span> : null}
+                  <span className="clm-arcade__chiffre">{Math.round(hud.corner.meters / 10) * 10} m</span>
+                </div>
+              )}
             </div>
           </div>
-        )}
 
-        {hud.phase === 'countdown' && hud.count != null && (
-          <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-            <p className="font-mono text-8xl font-semibold text-ember">{hud.count}</p>
-          </div>
-        )}
+          <div className="clm-arcade__statuts">
+            <article className="clm-arcade__statut clm-arcade__statut--depart">
+              <h3>Départ</h3>
+              {hud.phase === 'ready' && (
+                <>
+                  <p>{messageDepart(hud)}</p>
+                  <button type="button" className="clm-arcade__bouton--principal" onClick={start}>Feu vert</button>
+                </>
+              )}
+              {hud.phase === 'countdown' && hud.count != null && (
+                <p className="clm-arcade__decompte">{hud.count}</p>
+              )}
+              {(hud.phase === 'countdown' && hud.count == null) || hud.go ? <p>Partez</p> : null}
+              {hud.phase === 'racing' && !hud.go && <p>En course</p>}
+              {hud.phase === 'finished' && <p>Arrivé</p>}
+            </article>
 
-        {hud.go && (
-          <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-            <p className="text-5xl font-semibold tracking-wide text-white">Partez</p>
+            <article className="clm-arcade__statut clm-arcade__statut--penalite">
+              <h3>Pénalité</h3>
+              {hud.cut != null && <p className="clm-arcade__chiffre">+{hud.cut.toFixed(1)} s</p>}
+              {hud.penalty > 0 && hud.cut == null && (
+                <p className="clm-arcade__chiffre">+{hud.penalty.toFixed(1)} s</p>
+              )}
+              {hud.cut != null && <p>Virage coupé</p>}
+              {hud.offTrack && <p>Hors piste</p>}
+              {hud.unbalanced && <p>Déséquilibre</p>}
+              {hud.atLimit && <p>Limite</p>}
+              {hud.rescued && <p>Remis en piste</p>}
+              {hud.cut == null && hud.penalty <= 0 && !hud.offTrack && !hud.unbalanced && !hud.atLimit && !hud.rescued && (
+                <p>—</p>
+              )}
+            </article>
+
+            <article className="clm-arcade__statut clm-arcade__statut--record">
+              <h3>Record</h3>
+              {hud.improved ? (
+                <p className="clm-arcade__celebration">
+                  {hud.gap == null ? 'Nouveau record' : `Nouveau record ${formatDelta(hud.gap)}`}
+                </p>
+              ) : hud.best == null ? (
+                <p>Premier passage</p>
+              ) : (
+                <p>À battre {formatLap(hud.best)}</p>
+              )}
+              {hud.chasing && hud.phase === 'racing' ? <p>Fantôme en piste</p> : null}
+            </article>
+
+            {hud.phase === 'racing' && (
+              <div className="clm-arcade__jauges" aria-hidden>
+                {hud.grade != null && <SlopeReadout grade={hud.grade} />}
+                <SteerGauge value={hud.steer} />
+                <Pedal label="Accélération" value={hud.accel} tone="accel" />
+                <Pedal label="Freinage" value={hud.brake} tone="brake" />
+              </div>
+            )}
           </div>
-        )}
+        </div>
 
         {hud.phase === 'finished' && (
-          <div className="absolute inset-0 flex items-center justify-center bg-[#100c28]/55 p-6">
-            <div className="rounded-3xl border border-white/15 bg-[#120e30]/90 px-8 py-6 text-center backdrop-blur-md">
-              <p className="text-xs uppercase tracking-[0.18em] text-white/55">Tour bouclé</p>
-              <p className="mt-1 font-mono text-5xl tabular-nums">{formatLap(displayedTime)}</p>
-              {gameweekId && homologation === 'pending' && (
-                <p className="mt-1 text-xs text-white/55">Homologation du temps…</p>
-              )}
-              {gameweekId && homologation === 'done' && (
-                <p className="mt-1 text-xs text-white/55">Temps officiel</p>
-              )}
-              {gameweekId && homologation === 'error' && (
-                <p className="mt-1 text-xs text-ember">Temps non homologué</p>
-              )}
-              <p className="mt-2 text-sm text-white/70">
-                {hud.improved
-                  ? hud.gap == null ? 'Nouveau record' : `Nouveau record · ${formatDelta(hud.gap)} s`
-                  : hud.gap != null ? `${formatDelta(hud.gap)} s du record` : ''}
+          <div className="clm-arcade__fiche clm-arcade__fiche-course">
+            <h2>Tour bouclé</h2>
+            <p className="clm-arcade__temps clm-arcade__chiffre">{formatLap(displayedTime)}</p>
+            {gameweekId && homologation === 'pending' && (
+              <p className="clm-arcade__aide">Homologation du temps…</p>
+            )}
+            {gameweekId && homologation === 'done' && (
+              <p className="clm-arcade__aide">Temps officiel</p>
+            )}
+            {gameweekId && homologation === 'error' && (
+              <p className="clm-arcade__ligne-info clm-arcade__ligne-info--rouge">
+                <span>Temps non homologué</span>
               </p>
-              {hud.penalty > 0 && (
-                <p className="mt-1 text-xs text-ember">Dont {hud.penalty.toFixed(1)} s de pénalité pour virages coupés</p>
-              )}
-              <Button type="button" onClick={replay} className="mt-4">Rejouer</Button>
+            )}
+            <p className={hud.improved ? 'clm-arcade__ligne-info clm-arcade__ligne-info--jaune' : 'clm-arcade__ligne-info'}>
+              <span>{hud.improved ? 'Nouveau record' : 'Écart au record'}</span>
+              <span className="clm-arcade__chiffre">
+                {hud.gap == null ? '—' : formatDelta(hud.gap)}
+              </span>
+            </p>
+            {hud.penalty > 0 && (
+              <p className="clm-arcade__ligne-info clm-arcade__ligne-info--rouge">
+                <span>Pénalité</span>
+                <span className="clm-arcade__chiffre">+{hud.penalty.toFixed(1)} s</span>
+              </p>
+            )}
+            <div className="clm-arcade__actions">
+              <button type="button" className="clm-arcade__bouton--principal" onClick={replay}>Rejouer</button>
             </div>
           </div>
         )}
-      </div>
 
-      <div className="mt-3 flex justify-end">
-        <Button type="button" variant="outline" size="sm" onClick={toggleCamera} aria-pressed={camera === 'cockpit'}>
-          {camera === 'cockpit' ? 'Vue poursuite' : 'Vue cockpit'} (C)
-        </Button>
+        <div className="clm-arcade__commandes" aria-label="Commandes tactiles" style={{ touchAction: 'none' }}>
+          <button type="button" {...press('left')}>Gauche</button>
+          <button type="button" {...press('right')}>Droite</button>
+          <button type="button" {...press('brake')}>Frein</button>
+          <button type="button" {...press('throttle')}>Gaz</button>
+          <button type="button" onClick={toggleCamera} aria-pressed={camera === 'cockpit'}>
+            {camera === 'cockpit' ? 'Vue poursuite' : 'Vue cockpit'}
+          </button>
+        </div>
+        <p className="clm-arcade__aide">
+          Haut, W ou Z pour accélérer. Garde la touche pour braquer plus, tape-la pour corriger. Trop de gaz en virage et ça décroche. Espace pour freiner. C pour passer en vue cockpit. Couper un virage coûte du temps.
+        </p>
       </div>
-      <div className="mt-2 grid grid-cols-4 gap-2" style={{ touchAction: 'none' }}>
-        <Button type="button" variant="outline" {...press('left')}>Gauche</Button>
-        <Button type="button" {...press('throttle')}>Gaz</Button>
-        <Button type="button" variant="secondary" {...press('brake')}>Frein</Button>
-        <Button type="button" variant="outline" {...press('right')}>Droite</Button>
-      </div>
-      <p className="mt-2 text-center text-xs text-muted-foreground">Haut, W ou Z pour accélérer. Garde la touche pour braquer plus, tape-la pour corriger. Trop de gaz en virage et ça décroche. Espace pour freiner. C pour passer en vue cockpit. Couper un virage coûte du temps.</p>
     </div>
   );
+}
+
+const SECTOR_LABELS = ['S1', 'S2', 'S3'] as const;
+
+function formatSplit(seconds: number | null): string {
+  if (seconds == null || !Number.isFinite(seconds) || seconds < 0) return '—';
+  if (seconds >= 60) return formatLap(seconds);
+  return seconds.toFixed(3);
+}
+
+function deltaTone(value: number | null): string {
+  if (value == null) return '';
+  return value <= 0 ? 'clm-arcade__chiffre--avance' : 'clm-arcade__chiffre--retard';
+}
+
+function messageDepart(hud: Hud): string {
+  if (hud.best == null) return 'Premier passage : ce tour devient le record à battre.';
+  if (hud.chasing) return `Record ${formatLap(hud.best)}. Reste devant le fantôme.`;
+  return `Record ${formatLap(hud.best)}. Ce tour devient le passage à battre.`;
 }
 
 function liveMessage(hud: Hud, time: number): string {
@@ -686,6 +784,7 @@ function snapshot(sim: Sim, lengthKm: number, track: Track, now = 0, elevation?:
     cut: sim.cut && now < sim.cut.until ? sim.cut.seconds : null,
     penalty: sim.car.penalty,
     rescued: sim.phase === 'racing' && now < sim.rescuedUntil,
+    splits: sim.splits,
   };
 }
 
@@ -723,13 +822,13 @@ function Pedal({ label, value, tone }: { label: string; value: number; tone: 'ac
   const amount = Math.max(0, Math.min(1, value));
   return (
     <div>
-      <div className="mb-1 flex items-center justify-between text-[11px] uppercase tracking-[0.14em] text-white/55">
+      <div className="clm-arcade__jauge-ligne">
         <span>{label}</span>
-        <span className="font-mono tabular-nums">{Math.round(amount * 100)}</span>
+        <span className="clm-arcade__chiffre">{Math.round(amount * 100)}</span>
       </div>
-      <div className="h-1.5 overflow-hidden rounded-full bg-white/15">
-        <div
-          className={`h-full rounded-full ${tone === 'brake' ? 'bg-ember' : 'bg-white'}`}
+      <div className="clm-arcade__jauge-piste">
+        <span
+          className={tone === 'brake' ? 'clm-arcade__jauge-remplissage clm-arcade__jauge-remplissage--frein' : 'clm-arcade__jauge-remplissage'}
           style={{ width: `${Math.round(amount * 100)}%` }}
         />
       </div>
@@ -741,9 +840,9 @@ function SlopeReadout({ grade }: { grade: number }) {
   const percent = Math.round(grade * 100);
   const label = percent > 0 ? 'Montée' : percent < 0 ? 'Descente' : 'Plat';
   return (
-    <div className="flex items-center justify-between text-[11px] uppercase tracking-[0.14em] text-white/55">
+    <div className="clm-arcade__jauge-ligne">
       <span>{label}</span>
-      <span className={`font-mono tabular-nums ${percent > 0 ? 'text-amber-200' : percent < 0 ? 'text-sky-300' : ''}`}>
+      <span className="clm-arcade__chiffre">
         {percent > 0 ? '↗' : percent < 0 ? '↘' : '→'} {Math.abs(percent)} %
       </span>
     </div>
@@ -753,19 +852,22 @@ function SlopeReadout({ grade }: { grade: number }) {
 function SteerGauge({ value }: { value: number }) {
   const amount = Math.max(-1, Math.min(1, value));
   const width = Math.abs(amount) * 50;
+  const limite = Math.abs(amount) > 0.95;
   return (
     <div>
-      <div className="mb-1 flex items-center justify-between text-[11px] uppercase tracking-[0.14em] text-white/55">
+      <div className="clm-arcade__jauge-ligne">
         <span>Direction</span>
-        <span className="font-mono tabular-nums">
+        <span className="clm-arcade__chiffre">
           {Math.round(Math.abs(amount) * 100)}{amount < -0.005 ? ' G' : amount > 0.005 ? ' D' : ''}
         </span>
       </div>
-      <div className="relative h-1.5 overflow-hidden rounded-full bg-white/15">
-        <div className="absolute inset-y-0 left-1/2 w-px bg-white/50" />
-        <div
-          className={`absolute inset-y-0 rounded-full ${Math.abs(amount) > 0.95 ? 'bg-amber-300' : 'bg-white'}`}
-          style={amount < 0 ? { right: '50%', width: `${width}%` } : { left: '50%', width: `${width}%` }}
+      <div className="clm-arcade__jauge-piste">
+        <span className="clm-arcade__jauge-axe" />
+        <span
+          className={limite ? 'clm-arcade__jauge-remplissage clm-arcade__jauge-remplissage--limite' : 'clm-arcade__jauge-remplissage'}
+          style={amount < 0
+            ? { position: 'absolute', top: 0, bottom: 0, right: '50%', width: `${width}%` }
+            : { position: 'absolute', top: 0, bottom: 0, left: '50%', width: `${width}%` }}
         />
       </div>
     </div>

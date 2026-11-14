@@ -48,6 +48,22 @@ for (const page of pages) {
           return { path: file ?? base };
         });
       },
+    }, {
+      name: 'css-inject',
+      setup(bundle) {
+        bundle.onLoad({ filter: /\.css$/ }, (args) => {
+          const css = readFileSync(args.path, 'utf8');
+          return {
+            contents: `if (typeof document !== 'undefined' && !document.head.querySelector('style[data-clm-arcade]')) {
+              const style = document.createElement('style');
+              style.setAttribute('data-clm-arcade', '');
+              style.textContent = ${JSON.stringify(css)};
+              document.head.appendChild(style);
+            }`,
+            loader: 'js',
+          };
+        });
+      },
     }],
     loader: { '.svg': 'text', '.json': 'json' },
     logLevel: 'info',

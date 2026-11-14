@@ -416,6 +416,150 @@
   min-height: 48px;
 }
 
+.clm-arcade__piste-live {
+  position: relative;
+  min-width: 0;
+  overflow: hidden;
+  border: 4px solid var(--clm-creme);
+  box-shadow: 4px 4px 0 #000;
+  background: #041028;
+}
+
+.clm-arcade__ecran {
+  width: 100%;
+  height: 240px;
+}
+
+.clm-arcade__minimap {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 72px;
+  height: 72px;
+  border: 3px solid var(--clm-creme);
+  background: #041028;
+  pointer-events: none;
+  opacity: 1;
+}
+
+.clm-arcade__minimap--cache {
+  opacity: 0;
+}
+
+.clm-arcade__virage {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  right: 88px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  padding: 4px 8px;
+  background: var(--clm-noir);
+  border: 2px solid var(--clm-jaune);
+  color: var(--clm-creme);
+  pointer-events: none;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  text-transform: uppercase;
+}
+
+.clm-arcade__virage-num {
+  padding: 0 4px;
+  background: var(--clm-jaune);
+  color: var(--clm-noir);
+  font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+}
+
+.clm-arcade__chiffre--avance {
+  color: var(--clm-cyan);
+}
+
+.clm-arcade__chiffre--retard {
+  color: var(--clm-rouge);
+}
+
+.clm-arcade__jauges {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  padding: 8px;
+  background: var(--clm-noir);
+  border: 3px solid var(--clm-creme);
+}
+
+.clm-arcade__jauge-ligne {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 4px;
+  color: var(--clm-cyan);
+  font-family: "Arial Narrow", "Helvetica Neue", Impact, sans-serif;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  text-transform: uppercase;
+}
+
+.clm-arcade__jauge-piste {
+  position: relative;
+  height: 8px;
+  overflow: hidden;
+  background: var(--clm-nuit);
+  border: 2px solid var(--clm-creme);
+}
+
+.clm-arcade__jauge-remplissage {
+  display: block;
+  height: 100%;
+  background: var(--clm-creme);
+}
+
+.clm-arcade__jauge-remplissage--frein {
+  background: var(--clm-rouge);
+}
+
+.clm-arcade__jauge-remplissage--limite {
+  background: var(--clm-jaune);
+}
+
+.clm-arcade__jauge-axe {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 2px;
+  background: var(--clm-cyan);
+}
+
+.clm-arcade__statut .clm-arcade__bouton--principal {
+  width: 100%;
+  margin-top: 8px;
+}
+
+.clm-arcade__fiche-course {
+  min-width: 0;
+  margin-bottom: 10px;
+  padding: 12px;
+  background: var(--clm-noir);
+  border: 3px solid var(--clm-jaune);
+  box-shadow: 4px 4px 0 #000;
+}
+
+.clm-arcade__sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 .clm-arcade__table-wrap {
   max-width: 100%;
   padding-right: 4px;
@@ -559,9 +703,11 @@
 
 @media (prefers-reduced-motion: reduce) {
   .clm-arcade__decompte,
-  .clm-arcade__celebration {
+  .clm-arcade__celebration,
+  .clm-arcade__minimap {
     animation: none;
     transform: none;
+    transition: none;
   }
 }
 
@@ -613,6 +759,16 @@
   .clm-arcade__piste {
     min-height: 320px;
     height: 100%;
+  }
+
+  .clm-arcade__ecran {
+    height: min(62vh, 640px);
+    min-height: 360px;
+  }
+
+  .clm-arcade__minimap {
+    width: 112px;
+    height: 112px;
   }
 
   .clm-arcade__commandes {
