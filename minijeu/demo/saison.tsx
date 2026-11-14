@@ -212,24 +212,18 @@ function Race({ circuit, camera, onMenu }: { circuit: Circuit; camera: Camera; o
   }
 
   return (
-    <>
-      <div className="mb-4 flex items-center justify-between gap-3">
-        <div>
-          <p className="text-xs uppercase tracking-[0.18em] text-ember">Démo · R{circuit.round} · Contre-la-montre</p>
-          <h1 className="text-2xl font-bold">{circuit.full_name}</h1>
-        </div>
-        <Button type="button" variant="outline" onClick={onMenu}>Circuits</Button>
-      </div>
-      <TimeTrial
-        key={circuit.circuit_id}
-        track={prepared.track}
-        lengthKm={circuit.length_km}
-        circuitId={circuit.circuit_id}
-        elevation={prepared.samples}
-        signs={prepared.signs}
-        camera={camera}
-      />
-    </>
+    <TimeTrial
+      key={circuit.circuit_id}
+      track={prepared.track}
+      lengthKm={circuit.length_km}
+      circuitId={circuit.circuit_id}
+      elevation={prepared.samples}
+      signs={prepared.signs}
+      camera={camera}
+      circuitName={circuit.full_name}
+      onLeave={onMenu}
+      leaveLabel="Circuits"
+    />
   );
 }
 

@@ -27,13 +27,6 @@ export function Demo() {
   if (screen === 'race') {
     return (
       <Shell>
-        <div className="mb-4 flex items-center justify-between gap-3">
-          <div>
-            <p className="text-xs uppercase tracking-[0.18em] text-ember">Démo · Contre-la-montre</p>
-            <h1 className="text-2xl font-bold">{circuit.full_name}</h1>
-          </div>
-          <Button type="button" variant="outline" onClick={toMenu}>Menu</Button>
-        </div>
         <TimeTrial
           track={prepared.track}
           lengthKm={circuit.length_km}
@@ -41,6 +34,9 @@ export function Demo() {
           elevation={prepared.samples}
           signs={prepared.signs}
           camera={camera}
+          circuitName={circuit.full_name}
+          onLeave={toMenu}
+          leaveLabel="Menu"
         />
       </Shell>
     );

@@ -17,11 +17,11 @@ Les menus, le tableau de bord et les records doivent évoquer une borne d'arcade
 - [ ] Une proposition visuelle desktop et mobile couvre le menu, la sélection de circuit, le HUD en course et les résultats ; elle sert de référence à l'implémentation.
 - [ ] Menus, options, records et résultats partagent des composants et des styles communs entre les démos et l'application.
 - [ ] Titres bitmap ou anguleux, chiffres monospaces lisibles, palette bleu nuit/noir/blanc avec accents jaune, cyan et rouge, panneaux rectangulaires et damiers constituent une direction cohérente. L'écran titre et les résultats ajoutent le mot extrudé, les autocollants et les rayons de la référence deluxe. Le HUD de course reste plat.
-- [ ] Le chrono, la vitesse, les secteurs et l'écart restent lisibles sur la piste en mouvement. Départ, pénalité et nouveau record ont des états visuels distincts.
+- [x] Le chrono, la vitesse, les secteurs et l'écart restent lisibles sur la piste en mouvement. Départ, pénalité et nouveau record ont des états visuels distincts.
 - [ ] Le classement de 024 reprend la présentation des meilleurs temps, avec mise en avant du joueur connecté et action « Affronter » de 025 si disponible.
 - [ ] La navigation au clavier et les commandes tactiles existantes restent utilisables ; focus visible et aucun débordement horizontal à 360 px de large.
-- [ ] Les animations respectent `prefers-reduced-motion`. Les éventuels effets CRT sont désactivables et n'altèrent pas le HUD.
-- [ ] Les styles sont limités à `.clm-arcade` ; les pages fantasy extérieures au contre-la-montre gardent leur présentation.
+- [x] Les animations respectent `prefers-reduced-motion`. Les éventuels effets CRT sont désactivables et n'altèrent pas le HUD.
+- [x] Les styles sont limités à `.clm-arcade` ; les pages fantasy extérieures au contre-la-montre gardent leur présentation.
 - [ ] Captures des écrans desktop et mobile et résultat des quatre commandes de contrôle joints à la PR.
 
 ## Notes d'implémentation
@@ -31,6 +31,10 @@ Le travail visuel peut commencer en parallèle de 015 et 016 : maquettes puis co
 Respecter la réservation des fichiers partagés du plan. Le HUD s'intègre après 018, 020 et 022 ; le classement après 024. La revue visuelle sans changement de 019 précède l'intégration de l'habillage dans les écrans partagés. Coordonner l'action « Affronter » avec 025.
 
 Les captures avant et les scénarios de navigation servent de première preuve pour les changements de style ; un changement d'interaction reçoit un test de comportement adapté.
+
+### Tranche HUD — 2026-11-13
+
+Le HUD de `time-trial.tsx` et des démos Monaco et saison reprend les classes `.clm-arcade`. Le chrono (`0:00.000`), la vitesse, les secteurs et l'écart sont hors de la piste. Départ, pénalité et record ont des cadres cyan, rouge et jaune. Les chiffres du chrono ne sont pas dans le tube CRT (`animation` et `filter` à `none`). À 360 px, `scrollWidth` vaut 360 et les boutons tactiles ne recouvrent pas la piste. La story reste ouverte : menus partagés, classement « Affronter », parcours clavier complet et gate ne sont pas fermés par cette tranche.
 
 La référence deluxe du 2026-11-13 précise les écrans d'attraction, de résultats et de records. On n'en copie ni les textes, ni les marques, ni les sponsors. Le HUD de course ne reprend pas l'extrusion ni les rayons.
 
