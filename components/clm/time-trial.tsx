@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 import { buildRecord, crossedSector, deltaAt, formatDelta, parseRecord, sampleAtTime, type LapRecord, type LapSample } from '@/lib/clm-record';
 import './arcade/arcade.css';
+import { Habillage, lignesPanneau, type Autocollant } from './arcade/habillage';
 import { createLapInputLog, recordLapInput, replayLap, serializeLapInputs, type ClmInputSpan, type LapInputLog } from '@/lib/clm-replay';
 import { apiFetch } from '@/lib/api';
 import { biomeFor } from '@/lib/circuit-biome';
@@ -680,8 +681,20 @@ export function TimeTrial({
         </div>
 
         {hud.phase === 'finished' && (
-          <div className="clm-arcade__fiche clm-arcade__fiche-course">
-            <h2>Tour bouclé</h2>
+          <Habillage
+            rays
+            objet
+            surtitre="Tour"
+            mot="Bouclé"
+            niveau={2}
+            stickers={autocollantsArrivee(hud.improved, hud.gap == null)}
+            hiScore={hud.best == null ? '—' : formatLap(hud.best)}
+            panneau={lignesPanneau(
+              formatSplit(hud.splits[0]),
+              formatLap(displayedTime),
+              hud.best == null ? '—' : formatLap(hud.best),
+            )}
+          >
             <p className="clm-arcade__temps clm-arcade__chiffre">{formatLap(displayedTime)}</p>
             {gameweekId && homologation === 'pending' && (
               <p className="clm-arcade__aide">Homologation du temps…</p>
@@ -709,7 +722,7 @@ export function TimeTrial({
             <div className="clm-arcade__actions">
               <button type="button" className="clm-arcade__bouton--principal" onClick={replay}>Rejouer</button>
             </div>
-          </div>
+          </Habillage>
         )}
 
         <div className="clm-arcade__commandes" aria-label="Commandes tactiles" style={{ touchAction: 'none' }}>
@@ -730,6 +743,13 @@ export function TimeTrial({
 }
 
 const SECTOR_LABELS = ['S1', 'S2', 'S3'] as const;
+
+function autocollantsArrivee(improved: boolean, premier: boolean): Autocollant[] {
+  const stickers: Autocollant[] = ['depart'];
+  if (improved) stickers.unshift('record');
+  if (improved && premier) stickers.push('nouveau');
+  return stickers;
+}
 
 function formatSplit(seconds: number | null): string {
   if (seconds == null || !Number.isFinite(seconds) || seconds < 0) return '—';

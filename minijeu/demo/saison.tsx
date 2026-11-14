@@ -1,11 +1,11 @@
 import { useMemo, useState } from 'react';
 import { createRoot } from 'react-dom/client';
+import { Borne } from '@/components/clm/arcade/habillage';
 import { TimeTrial } from '@/components/clm/time-trial';
-import { Button } from '@/components/ui/button';
 import { formatLap } from '@/lib/clm';
 import type { LapRecord } from '@/lib/clm-record';
 import {
-  Credits, Options, ScreenTitle, SEASON, Shell, describeCircuit, eraseRecord, formatKm, prepare, readCamera, readRecord,
+  Credits, Options, ScreenTitle, SEASON, Shell, describeCircuit, eraseRecord, formatKm, panneauRecord, prepare, readCamera, readRecord,
   saveCamera, sectorSplits, type Camera, type Circuit, type Screen,
 } from './shared';
 import melbourne from '../../lib/circuits/2026/01-melbourne.svg';
@@ -73,6 +73,14 @@ function writeChoice(id: string | null) {
   window.history.replaceState(null, '', url);
 }
 
+function meilleurRecord(records: Array<LapRecord | null>): LapRecord | null {
+  let best: LapRecord | null = null;
+  for (const record of records) {
+    if (record && (best == null || record.time < best.time)) best = record;
+  }
+  return best;
+}
+
 function formatDate(iso: string): string {
   return new Intl.DateTimeFormat('fr-FR', {
     weekday: 'long',
@@ -123,27 +131,39 @@ export function Demo() {
   }
 
   if (screen === 'times') {
+    const meilleur = meilleurRecord(SEASON.map((entry) => records[entry.circuit_id] ?? null));
     return (
       <Shell>
-        <ScreenTitle title="Temps enregistrés" back="Circuits" onBack={toMenu} />
-        <ul className="space-y-2">
-          {SEASON.map((entry) => {
-            const record = records[entry.circuit_id];
-            const splits = record ? sectorSplits(record) : null;
-            return (
-              <li key={entry.circuit_id} className="flex items-center justify-between gap-3 rounded-2xl border border-white/15 bg-white/5 px-4 py-3">
-                <div>
-                  <p className="text-sm font-medium">R{entry.round} · {entry.full_name}</p>
-                  <p className="font-mono text-lg tabular-nums">{record ? formatLap(record.time) : '—'}</p>
-                  {splits && <p className="font-mono text-xs tabular-nums text-white/60">{splits.join(' · ')}</p>}
-                </div>
-                {record && (
-                  <Button type="button" variant="outline" size="sm" onClick={() => clearRecord(entry.circuit_id)}>Effacer</Button>
-                )}
-              </li>
-            );
-          })}
-        </ul>
+        <Borne
+          surtitre="Meilleurs"
+          mot="Temps"
+          stickers={meilleur ? ['record'] : []}
+          hiScore={meilleur ? formatLap(meilleur.time) : '—'}
+          panneau={panneauRecord(meilleur)}
+        >
+          <ul className="clm-arcade__liste-boutons">
+            {SEASON.map((entry) => {
+              const record = records[entry.circuit_id];
+              const splits = record ? sectorSplits(record) : null;
+              return (
+                <li key={entry.circuit_id} className="clm-arcade__ligne-record">
+                  <div>
+                    <p>
+                      <span className="clm-arcade__legend">R{entry.round}</span>
+                      <span>{entry.full_name}</span>
+                    </p>
+                    <p className="clm-arcade__chiffre">{record ? formatLap(record.time) : '—'}</p>
+                    {splits && <p className="clm-arcade__chiffre">{splits.join(' · ')}</p>}
+                  </div>
+                  {record && (
+                    <button type="button" onClick={() => clearRecord(entry.circuit_id)}>Effacer</button>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+          <button type="button" onClick={toMenu}>Circuits</button>
+        </Borne>
       </Shell>
     );
   }
@@ -164,37 +184,38 @@ export function Demo() {
     );
   }
 
+  const meilleur = meilleurRecord(SEASON.map((entry) => readRecord(entry.circuit_id)));
+
   return (
     <Shell>
-      <p className="text-xs uppercase tracking-[0.18em] text-ember">Démo · Ligue Fantasy F1</p>
-      <h1 className="mt-2 text-4xl font-bold">Saison 2026</h1>
-      <p className="mt-2 text-sm text-muted-foreground">{SEASON.length} circuits · contre-la-montre</p>
-      <ul className="mt-8 space-y-2">
-        {SEASON.map((entry) => (
-          <li key={entry.circuit_id}>
-            <Button
-              type="button"
-              variant="outline"
-              className="h-auto w-full justify-between gap-4 whitespace-normal rounded-2xl px-4 py-3 text-left"
-              onClick={() => openRace(entry.circuit_id)}
-            >
-              <span>
-                <span className="block text-xs uppercase tracking-[0.16em] text-white/55">R{entry.round} · {formatDate(entry.date)}</span>
-                <span className="mt-1 block text-base font-semibold">{entry.full_name}</span>
-              </span>
-              <span className="shrink-0 text-right text-xs text-white/70">
-                {formatKm(entry.length_km)}
-                <span className="mt-1 block">{describeCircuit(entry)}</span>
-              </span>
-            </Button>
-          </li>
-        ))}
-      </ul>
-      <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-        <Button type="button" variant="outline" onClick={openTimes}>Temps enregistrés</Button>
-        <Button type="button" variant="outline" onClick={() => setScreen('options')}>Options</Button>
-      </div>
-      <Credits plural />
+      <Borne
+        rays
+        objet
+        press
+        surtitre="Saison"
+        mot="Chrono"
+        detail={`${SEASON.length} circuits`}
+        stickers={['record', 'nouveau', 'depart', 'saison']}
+        hiScore={meilleur ? formatLap(meilleur.time) : '0:00.000'}
+        panneau={panneauRecord(meilleur)}
+      >
+        <div className="clm-arcade__grille-circuits clm-arcade__liste-boutons">
+          {SEASON.map((entry) => (
+            <button key={entry.circuit_id} type="button" className="clm-arcade__circuit" onClick={() => openRace(entry.circuit_id)}>
+              <small>R{entry.round} · {formatDate(entry.date)}</small>
+              {entry.full_name}
+              <small>
+                {formatKm(entry.length_km)} · {describeCircuit(entry)}
+              </small>
+            </button>
+          ))}
+        </div>
+        <div className="clm-arcade__liste-boutons">
+          <button type="button" onClick={openTimes}>Temps enregistrés</button>
+          <button type="button" onClick={() => setScreen('options')}>Options</button>
+        </div>
+        <Credits plural />
+      </Borne>
     </Shell>
   );
 }
@@ -204,10 +225,10 @@ function Race({ circuit, camera, onMenu }: { circuit: Circuit; camera: Camera; o
 
   if (!prepared) {
     return (
-      <>
+      <section className="clm-arcade" aria-label="Borne contre-la-montre">
         <ScreenTitle title={circuit.full_name} back="Circuits" onBack={onMenu} />
-        <p className="text-center text-lg">Ce tracé ne peut pas être parcouru.</p>
-      </>
+        <p className="clm-arcade__aide">Ce tracé ne peut pas être parcouru.</p>
+      </section>
     );
   }
 
