@@ -1,0 +1,15 @@
+[Unit]
+Description=Ligue Fantasy F1
+After=network.target
+
+[Service]
+# Démarrage local équivalent : npm run build && npm start
+WorkingDirectory=/opt/ligue-fantasy-f1
+EnvironmentFile=/opt/ligue-fantasy-f1/.env
+Environment=PORT=3000
+Environment=HOSTNAME=127.0.0.1
+ExecStart=/usr/bin/node .next/standalone/server.js
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

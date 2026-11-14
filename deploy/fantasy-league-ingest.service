@@ -1,0 +1,9 @@
+[Unit]
+Description=Ingestion des résultats Ligue Fantasy F1
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/ligue-fantasy-f1
+EnvironmentFile=/opt/ligue-fantasy-f1/.env
+Environment=BASE_URL=http://127.0.0.1:3000
+ExecStart=/bin/sh -c 'curl -fsS -H "Authorization: Bearer $CRON_SECRET" "$BASE_URL/api/cron/ingest-results"'

@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client';
+import { BETA_PLAYERS } from '../lib/local-auth';
 
 const prisma = new PrismaClient();
 
@@ -56,6 +57,19 @@ function getBasePrice(teamName: string): number {
 
 async function main() {
   console.log('Start seeding...');
+
+  for (const player of BETA_PLAYERS) {
+    await prisma.profile.upsert({
+      where: { id: player.id },
+      update: {},
+      create: {
+        id: player.id,
+        username: player.username,
+        display_name: player.displayName,
+      },
+    });
+  }
+  console.log(`Seeded ${BETA_PLAYERS.length} beta players.`);
 
   // ── Pilotes depuis OpenF1 ──────────────────────────
   console.log('Fetching drivers from OpenF1 API...');
@@ -128,20 +142,28 @@ async function main() {
       ? new Date(`${gp.qualifying_date}T14:00:00Z`)
       : new Date(`${gp.race_date}T12:00:00Z`);
 
+    const qualifyingStart = gp.qualifying_date ? new Date(`${gp.qualifying_date}T15:00:00Z`) : null;
+    const raceStart = new Date(`${gp.race_date}T15:00:00Z`);
+
     await prisma.gameweek.upsert({
       where: { season_round_number: { season: 2026, round_number: gp.round_number } },
       update: {
-        ...gp,
+        name: gp.name,
+        circuit: gp.circuit,
+        country: gp.country,
         season: 2026,
-        race_date: new Date(gp.race_date),
-        qualifying_date: gp.qualifying_date ? new Date(gp.qualifying_date) : null,
+        race_date: raceStart,
+        qualifying_date: qualifyingStart,
         lock_time: lockTime,
       },
       create: {
-        ...gp,
+        round_number: gp.round_number,
+        name: gp.name,
+        circuit: gp.circuit,
+        country: gp.country,
         season: 2026,
-        race_date: new Date(gp.race_date),
-        qualifying_date: gp.qualifying_date ? new Date(gp.qualifying_date) : null,
+        race_date: raceStart,
+        qualifying_date: qualifyingStart,
         lock_time: lockTime,
       },
     });

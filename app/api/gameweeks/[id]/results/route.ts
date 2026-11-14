@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getAuthUser } from '@/lib/auth';
 import { upsertPerformanceSchema } from '@/lib/validators';
+import { isPlatformAdmin } from '@/lib/platform-admin';
+import { freezeLineupsForGameweek } from '@/lib/freeze-lineups';
 import { z } from 'zod';
 
 type Params = { params: { id: string } }; // gameweek_id
@@ -26,8 +28,11 @@ export async function GET(req: NextRequest, { params }: Params) {
 
 // POST /api/gameweeks/[id]/results — Saisir/mettre à jour les résultats d'un pilote
 export async function POST(req: NextRequest, { params }: Params) {
-  const { errorResponse } = await getAuthUser();
+  const { user, errorResponse } = await getAuthUser();
   if (errorResponse) return errorResponse;
+  if (!isPlatformAdmin(user!.id)) {
+    return NextResponse.json({ message: 'Réservé à un admin plateforme' }, { status: 403 });
+  }
 
   try {
     const body = await req.json();
@@ -35,6 +40,14 @@ export async function POST(req: NextRequest, { params }: Params) {
     // Accepte un array ou un seul objet
     const items = Array.isArray(body) ? body : [body];
     const validated = items.map((item) => upsertPerformanceSchema.parse(item));
+
+    const gameweek = await prisma.gameweek.findUnique({
+      where: { id: params.id },
+      select: { season: true },
+    });
+    if (!gameweek) {
+      return NextResponse.json({ message: 'GP non trouvé' }, { status: 404 });
+    }
 
     const results = await prisma.$transaction(
       validated.map((v) =>
@@ -55,7 +68,9 @@ export async function POST(req: NextRequest, { params }: Params) {
       ),
     );
 
-    // Marquer le GP comme completed
+    // Geler avant completed : si la copie échoue, le GP ne passe pas à completed.
+    await freezeLineupsForGameweek(params.id, gameweek.season);
+
     await prisma.gameweek.update({
       where: { id: params.id },
       data: { status: 'completed' },

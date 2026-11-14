@@ -6,6 +6,7 @@ const config = {
     "./pages/**/*.{ts,tsx}",
     "./components/**/*.{ts,tsx}",
     "./app/**/*.{ts,tsx}",
+    "./minijeu/**/*.{ts,tsx}",
     "./src/**/*.{ts,tsx}",
   ],
   prefix: "",
@@ -18,7 +19,14 @@ const config = {
       },
     },
     extend: {
+      fontFamily: {
+        sans: ["var(--font-sans)", "ui-sans-serif", "system-ui", "sans-serif"],
+        mono: ["var(--font-mono)", "ui-monospace", "monospace"],
+      },
       colors: {
+        night: "rgb(var(--night) / <alpha-value>)",
+        teal: "rgb(var(--teal) / <alpha-value>)",
+        ember: "rgb(var(--ember) / <alpha-value>)",
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",

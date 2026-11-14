@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getAuthUser } from '@/lib/auth';
+import { ROSTER_FROZEN_MESSAGE } from '@/lib/lineup';
+import { freezeRosterIfClockBlocked } from '@/lib/freeze-lineups';
 
 type Params = { params: { id: string; entityId: string } };
 
@@ -21,6 +23,10 @@ export async function DELETE(req: NextRequest, { params }: Params) {
 
     if (team.league.status === 'completed') {
       return NextResponse.json({ message: 'La ligue est terminée' }, { status: 403 });
+    }
+
+    if (await freezeRosterIfClockBlocked(team.league.season)) {
+      return NextResponse.json({ message: ROSTER_FROZEN_MESSAGE }, { status: 403 });
     }
 
     const assignment = await prisma.rosterAssignment.findUnique({

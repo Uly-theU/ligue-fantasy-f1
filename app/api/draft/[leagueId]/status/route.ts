@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getAuthUser } from '@/lib/auth';
+import { f1DriverCardInclude, presentF1Driver } from '@/lib/present-driver';
 
 type Params = { params: { leagueId: string } };
 
@@ -76,13 +77,18 @@ export async function GET(req: NextRequest, { params }: Params) {
       currentPlayer = turnOrder[index];
     }
 
-    // Pilotes déjà draftés
-    const pickedEntityIds = session.draft_picks.map((p) => p.real_entity_id);
+    // Pilotes déjà draftés dans la ligue, y compris les périodes précédentes.
+    const picked = await prisma.draftPick.findMany({
+      where: { league_id: params.leagueId },
+      select: { real_entity_id: true },
+    });
+    const pickedEntityIds = picked.map((pick) => pick.real_entity_id);
 
     // Pilotes disponibles
     const available = await prisma.realEntity.findMany({
       where: { sport: 'f1', active: true, id: { notIn: pickedEntityIds } },
       orderBy: { base_price: 'desc' },
+      include: { f1_driver: { include: f1DriverCardInclude } },
     });
 
     return NextResponse.json({
@@ -98,7 +104,10 @@ export async function GET(req: NextRequest, { params }: Params) {
         started_at: session.started_at,
       },
       picks: session.draft_picks,
-      available_drivers: available,
+      available_drivers: available.map((driver) => ({
+        ...driver,
+        f1_driver: presentF1Driver(driver.f1_driver),
+      })),
       draft_windows: draftWindows,
       completed_count: completedCount,
       can_start_new: isComplete && draftWindows.length > 0 && completedCount < draftWindows.length,

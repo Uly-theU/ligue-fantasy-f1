@@ -115,7 +115,7 @@
 │   ├── prisma.ts                 # Singleton PrismaClient
 │   ├── scoring.ts                # Moteur de scoring (calculateDriverScore, calculateTeamScore, DEFAULT_SCORING_RULES)
 │   ├── supabase-browser.ts       # Client Supabase navigateur
-│   ├── supabase-server.ts        # Client Supabase serveur (createServerSupabaseClient + createAdminSupabaseClient)
+│   ├── supabase-server.ts        # Client Supabase serveur (auth cookies uniquement)
 │   ├── utils.ts                  # cn() (clsx + tailwind-merge)
 │   └── validators.ts             # Schémas Zod (teams, roster, gameweeks, performances)
 ├── components/
@@ -195,10 +195,10 @@
 - Routes publiques : `/`, `/login`, `/register`, `/api/auth/callback`
 - API : si pas de session → 401 JSON ; pages → redirect `/login?redirectTo=...`
 
-### Double accès DB
-- **Supabase Admin Client** (`createAdminSupabaseClient`, service role) : utilisé dans les routes API leagues/teams/join/leave pour bypass RLS
-- **Supabase Cookie Client** (`createServerSupabaseClient`) : utilisé uniquement pour l'auth (getUser)
-- **Prisma** : utilisé dans les routes scoring, draft, standings, chat pour des requêtes complexes avec includes
+### Accès DB
+- **Supabase Cookie Client** (`createServerSupabaseClient`) : auth uniquement (getUser, échange du code OAuth)
+- **Prisma** : toutes les données du jeu (ligues, équipes, draft, scores, chat), via `DATABASE_URL` (Postgres Docker en production)
+- Le profil local est créé à la connexion (`ensureProfile`) : le trigger Supabase `auth.users` n'écrit pas dans cette base
 
 ### RLS (Row Level Security)
 - Activé sur toutes les 14 tables
@@ -331,10 +331,10 @@ npm run db:seed          # Seed via tsx (prisma/seed.ts) — pilotes depuis Open
 
 ### Variables d'environnement (`.env.example`)
 ```
-NEXT_PUBLIC_SUPABASE_URL=       # URL projet Supabase
-NEXT_PUBLIC_SUPABASE_ANON_KEY=  # Clé anonyme Supabase
-SUPABASE_SERVICE_ROLE_KEY=      # Clé service role (crons, bypass RLS)
-DATABASE_URL=                   # Connexion PostgreSQL directe (Prisma)
+NEXT_PUBLIC_SUPABASE_URL=       # URL projet Supabase (auth seule)
+NEXT_PUBLIC_SUPABASE_ANON_KEY=  # Clé anonyme Supabase (auth seule)
+DATABASE_URL=                   # Postgres du jeu (Prisma). En Docker : service db
+POSTGRES_PASSWORD=              # Mot de passe du Postgres Compose
 CRON_SECRET=                    # Secret pour sécuriser les endpoints cron
 ```
 
@@ -353,7 +353,7 @@ CRON_SECRET=                    # Secret pour sécuriser les endpoints cron
 - Pattern : vérif auth → validation Zod → vérif membership/ownership → opération DB → réponse JSON
 - Erreurs : `{ message: string }` avec code HTTP approprié
 - Réponses : `{ league: ... }`, `{ teams: [...] }`, etc. (clé nommée au singulier ou pluriel)
-- **RLS bypass** : auth via `createServerSupabaseClient()` (cookies), DB ops via `createAdminSupabaseClient()` (service role)
+- **Données** : auth via `createServerSupabaseClient()` (cookies), lectures et écritures via Prisma
 
 ### Style
 - Composants UI : shadcn/ui (Card, Button, Badge, Input)

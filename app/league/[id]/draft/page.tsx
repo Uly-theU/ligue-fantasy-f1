@@ -8,6 +8,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { apiFetch } from '@/lib/api';
+import { DriverPortrait } from '@/components/ui/driver-portrait';
+import { DriverReferenceLines, type DriverCardReference } from '@/components/f1/driver-reference';
 
 type Driver = {
   id: string;
@@ -15,6 +17,7 @@ type Driver = {
   short_name: string;
   base_price: number;
   metadata: { team?: string; car_number?: number };
+  f1_driver?: DriverCardReference | null;
 };
 
 type Pick = {
@@ -242,12 +245,11 @@ export default function DraftPage() {
             <div className="space-y-2 max-h-[500px] overflow-y-auto">
               {draft.available_drivers.map((d) => (
                 <div key={d.id} className="flex items-center gap-3 p-2 rounded border">
-                  <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center text-xs font-bold">
-                    {d.short_name}
-                  </div>
+                  <DriverPortrait shortName={d.short_name} name={d.name} className="h-9 w-9" />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium">{d.name}</p>
                     <p className="text-xs text-muted-foreground">{d.metadata.team}</p>
+                    <DriverReferenceLines driver={d.f1_driver} />
                   </div>
                   {isMyTurn && !draft.session.is_complete && (
                     <Button

@@ -26,7 +26,7 @@ export interface DriverPerformance {
   qualifying_position: number | null;
   fastest_lap: boolean;
   dotd: boolean;               // Driver of the Day
-  dnf: string | null;          // null, "mechanical", "accident"
+  dnf: 'mechanical' | 'accident' | 'unspecified' | null;
   grid_penalty: number;
   positions_gained: number;
 }
@@ -53,7 +53,7 @@ export function calculateDriverScore(
   let penalty = 0;
   const details: string[] = [];
 
-  // 1. Points de course (position finale)
+  // 1. Points de course. Tout DNF, y compris sans cause connue, retire les points d'arrivée.
   if (performance.race_position && !performance.dnf) {
     const posKey = `P${performance.race_position}`;
     const pts = rules.race_finish[posKey] ?? 0;

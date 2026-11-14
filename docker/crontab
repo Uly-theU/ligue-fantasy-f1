@@ -1,0 +1,2 @@
+0 19 * * 0 . /etc/cron.env; /usr/local/bin/cron-job.sh /api/cron/ingest-results
+30 19 * * 0 . /etc/cron.env; /usr/local/bin/cron-job.sh /api/cron/calculate-scores

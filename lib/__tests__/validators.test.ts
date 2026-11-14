@@ -175,6 +175,31 @@ describe('upsertPerformanceSchema', () => {
     ).toThrow();
   });
 
+  it('accepte une place de qualifications jusqu\'à 22', () => {
+    const parsed = upsertPerformanceSchema.parse({
+      real_entity_id: '550e8400-e29b-41d4-a716-446655440000',
+      results: {
+        race_position: 22,
+        qualifying_session: 'Q1',
+        qualifying_position: 22,
+      },
+    });
+    expect(parsed.results.qualifying_position).toBe(22);
+  });
+
+  it('rejette une place de qualifications hors grille', () => {
+    expect(() =>
+      upsertPerformanceSchema.parse({
+        real_entity_id: '550e8400-e29b-41d4-a716-446655440000',
+        results: {
+          race_position: null,
+          qualifying_session: null,
+          qualifying_position: 23,
+        },
+      }),
+    ).toThrow();
+  });
+
   it('rejette un dnf invalide', () => {
     expect(() =>
       upsertPerformanceSchema.parse({

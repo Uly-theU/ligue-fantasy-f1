@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getAuthUser } from '@/lib/auth';
 import { updateGameweekSchema } from '@/lib/validators';
+import { isPlatformAdmin } from '@/lib/platform-admin';
+import { getCircuitSheet } from '@/lib/circuit-sheet';
 import { z } from 'zod';
 
 type Params = { params: { id: string } };
@@ -23,7 +25,11 @@ export async function GET(req: NextRequest, { params }: Params) {
       return NextResponse.json({ message: 'GP non trouvé' }, { status: 404 });
     }
 
-    return NextResponse.json({ gameweek });
+    const circuit_sheet = gameweek.circuit_id
+      ? await getCircuitSheet(gameweek.circuit_id, gameweek.circuit_layout_id)
+      : null;
+
+    return NextResponse.json({ gameweek, circuit_sheet });
   } catch (error) {
     console.error('GET /api/gameweeks/[id]:', error);
     return NextResponse.json({ message: 'Internal server error' }, { status: 500 });
@@ -32,8 +38,11 @@ export async function GET(req: NextRequest, { params }: Params) {
 
 // PATCH /api/gameweeks/[id] — Modifier un GP
 export async function PATCH(req: NextRequest, { params }: Params) {
-  const { errorResponse } = await getAuthUser();
+  const { user, errorResponse } = await getAuthUser();
   if (errorResponse) return errorResponse;
+  if (!isPlatformAdmin(user!.id)) {
+    return NextResponse.json({ message: 'Réservé à un admin plateforme' }, { status: 403 });
+  }
 
   try {
     const body = await req.json();
@@ -61,8 +70,11 @@ export async function PATCH(req: NextRequest, { params }: Params) {
 
 // DELETE /api/gameweeks/[id] — Supprimer un GP
 export async function DELETE(req: NextRequest, { params }: Params) {
-  const { errorResponse } = await getAuthUser();
+  const { user, errorResponse } = await getAuthUser();
   if (errorResponse) return errorResponse;
+  if (!isPlatformAdmin(user!.id)) {
+    return NextResponse.json({ message: 'Réservé à un admin plateforme' }, { status: 403 });
+  }
 
   try {
     await prisma.gameweek.delete({ where: { id: params.id } });

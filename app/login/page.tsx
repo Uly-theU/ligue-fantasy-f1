@@ -1,20 +1,39 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/components/providers';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { PhotoPlate } from '@/components/ui/photo-plate';
+import { BETA_PLAYERS, betaPlayerCookie, isLoopbackHost } from '@/lib/local-auth';
 
 export default function LoginPage() {
-  const { supabase } = useAuth();
+  const { supabase, user, loading: authLoading } = useAuth();
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
+  const [gate, setGate] = useState<'unknown' | 'beta' | 'supabase'>('unknown');
+
+  useEffect(() => {
+    const beta = process.env.NEXT_PUBLIC_LOCAL_AUTH_BYPASS === '1' && isLoopbackHost(window.location.hostname);
+    setGate(beta ? 'beta' : 'supabase');
+  }, []);
+
+  useEffect(() => {
+    if (gate === 'unknown' || authLoading) return;
+    if (user) router.replace('/dashboard');
+  }, [gate, authLoading, user, router]);
+
+  function choosePlayer(id: string) {
+    document.cookie = betaPlayerCookie(id);
+    window.location.assign('/dashboard');
+  }
 
   const handleGoogleLogin = async () => {
+    if (!supabase) return;
     setLoading(true);
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
@@ -26,6 +45,7 @@ export default function LoginPage() {
 
   const handleMagicLink = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!supabase) return;
     setLoading(true);
     const { error } = await supabase.auth.signInWithOtp({
       email,
@@ -39,11 +59,53 @@ export default function LoginPage() {
     setLoading(false);
   };
 
+  if (gate === 'unknown' || authLoading || user) {
+    return (
+      <div className="flex min-h-[calc(100vh-3.5rem)] items-center justify-center px-4">
+        <div className="h-40 w-full max-w-md animate-pulse rounded-3xl bg-muted" />
+      </div>
+    );
+  }
+
+  if (gate === 'beta') {
+    return (
+      <div className="flex min-h-[calc(100vh-3.5rem)] items-center justify-center px-4 py-10">
+        <div className="w-full max-w-lg space-y-6">
+          <div className="space-y-2">
+            <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-ember">Testeurs</p>
+            <h1 className="text-3xl font-semibold tracking-tight">Qui joue ?</h1>
+            <p className="text-sm text-muted-foreground">
+              Cinq joueurs de test, sans compte. Le choix reste sur cette machine.
+            </p>
+          </div>
+          <ul className="space-y-2">
+            {BETA_PLAYERS.map((player) => (
+              <li key={player.id}>
+                <button
+                  type="button"
+                  onClick={() => choosePlayer(player.id)}
+                  className="flex w-full items-center justify-between rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-left transition-colors hover:border-white/25"
+                >
+                  <span>
+                    <span className="block font-medium">{player.displayName}</span>
+                    <span className="text-sm text-muted-foreground">@{player.username}</span>
+                  </span>
+                  <span aria-hidden className="text-muted-foreground">→</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="flex items-center justify-center min-h-[calc(100vh-3.5rem)] px-4">
-      <Card className="w-full max-w-md">
+    <div className="flex items-center justify-center min-h-[calc(100vh-3.5rem)] px-4 py-10">
+      <PhotoPlate src="/photos/circuits/mclaren.jpg" alt="" scrim="veil" className="w-full max-w-md">
+      <Card className="w-full border-0 bg-transparent shadow-none backdrop-blur-none">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl">🏎️ Connexion</CardTitle>
+          <CardTitle className="text-2xl">Connexion</CardTitle>
           <CardDescription>Connecte-toi pour accéder à tes ligues</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -74,7 +136,7 @@ export default function LoginPage() {
               <span className="w-full border-t" />
             </div>
             <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-card px-2 text-muted-foreground">ou</span>
+              <span className="bg-night/70 px-2 text-muted-foreground">ou</span>
             </div>
           </div>
 
@@ -96,6 +158,7 @@ export default function LoginPage() {
           )}
         </CardContent>
       </Card>
+      </PhotoPlate>
     </div>
   );
 }

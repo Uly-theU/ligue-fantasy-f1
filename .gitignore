@@ -1,5 +1,6 @@
 # Next.js
 .next/
+.next-intro/
 out/
 
 # Node.js
@@ -36,9 +37,9 @@ Thumbs.db
 *.jpg
 *.jpeg
 *.gif
+!public/photos/**/*.jpg
+!design/mockups/clm-arcade/captures/*.png
+!design/mockups/clm-arcade/references/*.jpg
 
 # VSCode
 .vscode/
-
-# Docker
-.dockerignore

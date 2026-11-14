@@ -210,7 +210,7 @@ export default function LeagueSettingsPage() {
     setDeleting(true);
     try {
       await apiFetch(`/api/leagues/${id}`, { method: 'DELETE' });
-      toast('Ligue supprim��e', { variant: 'success' });
+      toast('Ligue supprimée', { variant: 'success' });
       router.push('/dashboard');
     } catch (e) {
       toast(e instanceof ApiError ? e.message : 'Erreur lors de la suppression', { variant: 'error' });
@@ -400,7 +400,7 @@ export default function LeagueSettingsPage() {
           >
             <div className="font-semibold">💰 Budget Fixe</div>
             <p className="text-sm text-muted-foreground mt-1">
-              Chaque joueur dispose d'un budget pour acheter des pilotes sur le marché.
+              Chaque joueur dispose d&apos;un budget pour acheter des pilotes sur le marché.
             </p>
           </button>
         </CardContent>

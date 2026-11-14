@@ -1,0 +1,5 @@
+# Reverse proxy HTTPS vers le processus Node local.
+# Remplacer le nom de domaine le jour de la bascule. Les tests ne passent pas par ici.
+example.com {
+	reverse_proxy 127.0.0.1:3000
+}

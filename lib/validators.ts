@@ -45,13 +45,21 @@ export const updateGameweekSchema = createGameweekSchema.partial().extend({
 export const upsertPerformanceSchema = z.object({
   real_entity_id: z.string().uuid(),
   results: z.object({
-    race_position: z.number().int().min(1).max(20).nullable(),
+    race_position: z.number().int().min(1).max(22).nullable(),
     qualifying_session: z.enum(['Q1', 'Q2', 'Q3']).nullable(),
-    qualifying_position: z.number().int().min(1).max(20).nullable().optional(),
+    qualifying_position: z.number().int().min(1).max(22).nullable().optional(),
     fastest_lap: z.boolean().default(false),
     dotd: z.boolean().default(false),
-    dnf: z.enum(['mechanical', 'accident']).nullable().default(null),
+    dnf: z.enum(['mechanical', 'accident', 'unspecified']).nullable().default(null),
     grid_penalty: z.number().int().min(0).default(0),
     positions_gained: z.number().int().default(0),
   }),
+});
+
+// ── Contre-la-montre ───────────────────────────────
+// Le temps annoncé par le client n'est pas un champ : seules les entrées sont lues.
+
+export const submitTimeTrialLapSchema = z.object({
+  gameweek_id: z.string().uuid(),
+  inputs: z.string().min(1),
 });

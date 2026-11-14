@@ -9,6 +9,8 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { apiFetch, ApiError } from '@/lib/api';
 import { useToast } from '@/components/ui/toast';
+import { DriverHistory, DriverReferenceLines, type DriverCardReference } from '@/components/f1/driver-reference';
+import { formatCareer } from '@/lib/f1-reference';
 
 type Driver = {
   id: string;
@@ -16,6 +18,7 @@ type Driver = {
   short_name: string;
   base_price: number;
   metadata: { team?: string; car_number?: number; country?: string };
+  f1_driver: DriverCardReference | null;
 };
 
 type Team = {
@@ -113,10 +116,15 @@ export default function MarketPage() {
         className="max-w-md"
       />
 
-      {Object.entries(byTeam).map(([teamName, teamDrivers]) => (
+      {Object.entries(byTeam).map(([teamName, teamDrivers]) => {
+        const constructor = teamDrivers.find((driver) => driver.f1_driver?.current_constructor)?.f1_driver?.current_constructor;
+        return (
         <Card key={teamName}>
           <CardHeader>
             <CardTitle className="text-lg">{teamName}</CardTitle>
+            {constructor && (
+              <p className="text-xs font-normal text-muted-foreground">{formatCareer(constructor)}</p>
+            )}
           </CardHeader>
           <CardContent className="space-y-2">
             {teamDrivers.map((d) => {
@@ -128,9 +136,11 @@ export default function MarketPage() {
                   <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center text-xs font-bold">
                     {d.short_name}
                   </div>
-                  <div className="flex-1 min-w-0">
+                  <div className="flex-1 min-w-0 space-y-1">
                     <p className="font-medium text-sm">{d.name}</p>
                     <p className="text-xs text-muted-foreground">#{d.metadata.car_number} · {d.metadata.country}</p>
+                    <DriverReferenceLines driver={d.f1_driver} />
+                    {d.f1_driver && <DriverHistory entityId={d.id} />}
                   </div>
                   <span className="text-sm font-semibold">{formatPrice(d.base_price)}</span>
                   {owned ? (
@@ -149,7 +159,8 @@ export default function MarketPage() {
             })}
           </CardContent>
         </Card>
-      ))}
+        );
+      })}
     </div>
   );
 }

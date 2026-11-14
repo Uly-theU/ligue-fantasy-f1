@@ -1,6 +1,8 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import { bearerMatches } from '@/lib/cron-auth';
+import { localBypassForHost } from '@/lib/local-auth';
 
 /**
  * Middleware global : rafraîchit la session Supabase + protège les routes /api et /dashboard, /league, /profile.
@@ -10,6 +12,28 @@ import type { NextRequest } from 'next/server';
 const PUBLIC_PATHS = ['/', '/login', '/register', '/api/auth/callback'];
 
 export async function middleware(req: NextRequest) {
+  const { pathname } = req.nextUrl;
+
+  // Médias publics de l'intro, disponibles avant toute connexion.
+  if (pathname.startsWith('/intro/') || pathname.startsWith('/audio/')) {
+    return NextResponse.next();
+  }
+
+  if (pathname === '/api/health') {
+    return NextResponse.next();
+  }
+
+  if (pathname === '/api/cron' || pathname.startsWith('/api/cron/')) {
+    if (!bearerMatches(req.headers.get('authorization'), process.env.CRON_SECRET)) {
+      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+    }
+    return NextResponse.next({ request: { headers: req.headers } });
+  }
+
+  if (localBypassForHost(req.nextUrl.hostname)) {
+    return NextResponse.next({ request: { headers: req.headers } });
+  }
+
   let res = NextResponse.next({ request: { headers: req.headers } });
 
   const supabase = createServerClient(
@@ -38,8 +62,6 @@ export async function middleware(req: NextRequest) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-
-  const { pathname } = req.nextUrl;
 
   // Laisser passer les routes publiques
   if (PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(p + '/'))) {
