@@ -19,6 +19,31 @@ export function formatDelta(seconds: number): string {
   return `${seconds < 0 ? '−' : '+'}${abs.toFixed(3)}`;
 }
 
+/**
+ * Vitesse au sol, en unités de tracé par seconde, sur le segment d'échantillons qui contient `s`.
+ * Les échantillons sont ceux du record, dans l'ordre croissant de l'abscisse.
+ */
+export function speedAtS(samples: LapSample[], s: number): number {
+  if (samples.length < 2) return 0;
+  const last = samples.length - 1;
+  let lo = 0;
+  let hi = last;
+  if (s <= samples[0].s) hi = 1;
+  else if (s >= samples[last].s) lo = last - 1;
+  else {
+    while (lo + 1 < hi) {
+      const mid = (lo + hi) >> 1;
+      if (samples[mid].s <= s) lo = mid;
+      else hi = mid;
+    }
+  }
+  const a = samples[lo];
+  const b = samples[hi];
+  const dt = b.t - a.t;
+  if (!(dt > 1e-9)) return 0;
+  return Math.hypot(b.x - a.x, b.y - a.y) / dt;
+}
+
 export function timeAtS(samples: LapSample[], s: number): number | null {
   if (samples.length === 0) return null;
   if (s <= samples[0].s) return samples[0].t;

@@ -2,7 +2,7 @@
 
 > **Phase** : Alpha — gate F
 > **Type** : Logic
-> **Statut** : Ready
+> **Statut** : In Progress
 
 ## Contexte
 
@@ -13,13 +13,20 @@
 
 ## Critères d'acceptation
 
-- [ ] Le temps de `new RaceView(...)` est mesuré sur Monaco et Spa et noté dans la PR.
-- [ ] Si la construction dépasse 150 ms, `coversTrack` et `clearance` interrogent une grille spatiale construite une fois. Sinon, rien n'est changé.
-- [ ] Les roues du fantôme tournent à la vitesse du fantôme, déduite de ses échantillons.
+- [x] Le temps de `new RaceView(...)` est mesuré sur Monaco et Spa et noté dans la PR.
+- [x] Si la construction dépasse 150 ms, `coversTrack` et `clearance` interrogent une grille spatiale construite une fois. Sinon, rien n'est changé.
+- [x] Les roues du fantôme tournent à la vitesse du fantôme, déduite de ses échantillons.
 
 ## Notes d'implémentation
 
 [HYPOTHÈSE] Le coût est sensible sur les circuits urbains, où les poteaux sont deux fois plus serrés. La mesure tranche.
+
+Mesure (Vitest, jsdom, `WebGLRenderer` et PMREM simulés, `getContext` nul donc pas de rastérisation 2D). Tracé préparé comme en jeu. Trois constructions :
+
+- Monaco (521 points) : 126,9 ms, 102,1 ms, 100,5 ms.
+- Spa (521 points) : 138,4 ms, 139,3 ms, 139,9 ms.
+
+Tout reste sous 150 ms. `coversTrack` et `clearance` ne changent pas. Pas de grille.
 
 ## Hors périmètre
 
@@ -37,6 +44,7 @@
   - Given: un record avec échantillons, joueur à l'arrêt
   - When: une image est rendue
   - Then: la rotation des roues du fantôme avance
+  - Prouvé : `race-view.ghost.test.ts`, une image, joueur à l'arrêt, rotation égale à la vitesse du segment d'échantillons.
 
 ## Dépendances
 
