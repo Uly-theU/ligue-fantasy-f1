@@ -3,9 +3,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/components/providers';
-import { Button } from '@/components/ui/button';
 import { TimeTrial } from '@/components/clm/time-trial';
-import { CircuitLore } from '@/components/f1/circuit-lore';
+import { EnteteClm, type EssaiAffiche } from '@/components/clm/arcade/entete-clm';
 import { trackSigns } from '@/lib/circuit-places';
 import { apiFetch, ApiError } from '@/lib/api';
 import { bankTrack } from '@/lib/circuit-banking';
@@ -116,90 +115,72 @@ export default function ClmPage() {
     setChoice(value);
   };
 
-  const picker = circuits.length > 0 && (
-    <label className="mb-4 flex flex-wrap items-center gap-2 text-sm">
-      <span className="text-muted-foreground">Circuit</span>
-      <select
-        value={choice ?? NEXT_RACE}
-        onChange={(event) => pick(event.target.value)}
-        className="h-9 min-w-0 flex-1 rounded-md border border-white/15 bg-[#120e30] px-3 text-sm sm:max-w-md"
-      >
-        <option value={NEXT_RACE}>Prochain Grand Prix</option>
-        {circuits.map((circuit) => (
-          <option key={circuit.circuit_id} value={circuit.circuit_id}>
-            {`R${circuit.round} · ${circuit.full_name}${circuit.range_m != null ? ` · ${Math.round(circuit.range_m)} m de dénivelé` : ''}`}
-          </option>
-        ))}
-      </select>
-    </label>
-  );
-
-  if (authLoading || loading) {
+  if (authLoading || choice == null || loading) {
     return (
-      <div className="container max-w-5xl py-6">
-        {picker}
-        <div className="h-[min(68vh,720px)] animate-pulse rounded-3xl border border-white/10 bg-white/5" />
+      <div className="clm-arcade__page-col">
+        <EnteteClm choice={choice ?? NEXT_RACE} circuits={circuits} onPick={pick} attente />
       </div>
     );
   }
 
   if (error || !trial || !track) {
     return (
-      <div className="container max-w-5xl py-6">
-        {picker}
-        <div className="py-16 text-center space-y-4">
-          <p className="text-lg">{error ?? 'Ce tracé ne peut pas être parcouru.'}</p>
-          <Button type="button" variant="outline" onClick={() => window.location.reload()}>Réessayer</Button>
-        </div>
+      <div className="clm-arcade__page-col">
+        <EnteteClm
+          choice={choice}
+          circuits={circuits}
+          onPick={pick}
+          message={error ?? 'Ce tracé ne peut pas être parcouru.'}
+          onRetry={() => window.location.reload()}
+        />
       </div>
     );
   }
 
-  const when = new Date(trial.race_date).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
-  const facts = [
-    trial.length_km != null ? `${trial.length_km.toLocaleString('fr-FR', { minimumFractionDigits: 3, maximumFractionDigits: 3 })} km` : null,
-    trial.turns != null ? `${trial.turns} virages` : null,
-    trial.direction_label,
-    trial.elevation ? `${Math.round(trial.elevation.range_m)} m de dénivelé` : null,
-  ].filter(Boolean);
   const trialKey = trial.circuit_id ?? trial.gameweek_id ?? 'clm';
 
   return (
-    <div className="container max-w-5xl py-6">
-      {picker}
-      <header className="mb-4">
-        <p className="text-xs uppercase tracking-[0.18em] text-ember">
-          Contre-la-montre · Round {trial.round_number}{trial.next_race ? ' · Prochain Grand Prix' : ''}
-        </p>
-        <h1 className="text-3xl font-bold">{trial.name}</h1>
-        <p className="text-sm text-muted-foreground">
-          {[
-            trial.full_name && trial.full_name !== trial.name ? trial.full_name : null,
-            trial.place_name,
-            when,
-          ].filter(Boolean).join(' · ')}
-        </p>
-        {facts.length > 0 && <p className="text-sm text-muted-foreground">{facts.join(' · ')}</p>}
-        <CircuitLore circuitId={trial.circuit_id} />
-      </header>
+    <div className="clm-arcade__page-col">
+      <EnteteClm choice={choice} circuits={circuits} onPick={pick} essai={essaiAffiche(trial, signs.length)} />
       <TimeTrial
         key={trialKey}
         track={track}
         lengthKm={trial.length_km ?? 0}
         circuitId={trialKey}
+        circuitName={trial.name}
         gameweekId={trial.gameweek_id}
         elevation={elevation}
         signs={signs}
       />
-      <p className="mt-3 text-center text-[11px] text-white/40">
-        Tracé F1DB, CC BY 4.0
-        {trial.elevation
-          ? trial.elevation.elevation_source === 'opentopodata-srtm30m'
-            ? ' · Altitudes NASA SRTM via OpenTopoData · Géoréférencement bacinger/f1-circuits'
-            : ' · Altitudes Copernicus DEM via Open-Meteo, CC BY 4.0 · Géoréférencement bacinger/f1-circuits'
-          : ''}
-        {signs.length > 0 ? ' · Numéros des virages MultiViewer' : ''}
-      </p>
     </div>
   );
+}
+
+function essaiAffiche(trial: Trial, signsCount: number): EssaiAffiche {
+  const when = new Date(trial.race_date).toLocaleDateString('fr-FR', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+  });
+  const altitude = !trial.elevation
+    ? ''
+    : trial.elevation.elevation_source === 'opentopodata-srtm30m'
+      ? ' · Altitudes NASA SRTM via OpenTopoData · Géoréférencement bacinger/f1-circuits'
+      : ' · Altitudes Copernicus DEM via Open-Meteo, CC BY 4.0 · Géoréférencement bacinger/f1-circuits';
+  return {
+    name: trial.name,
+    roundNumber: trial.round_number,
+    nextRace: trial.next_race,
+    fullName: trial.full_name && trial.full_name !== trial.name ? trial.full_name : null,
+    placeName: trial.place_name,
+    when,
+    lengthLabel: trial.length_km != null
+      ? `${trial.length_km.toLocaleString('fr-FR', { minimumFractionDigits: 3, maximumFractionDigits: 3 })} km`
+      : null,
+    turnsLabel: trial.turns != null ? String(trial.turns) : null,
+    directionLabel: trial.direction_label,
+    elevationLabel: trial.elevation ? `${Math.round(trial.elevation.range_m)} m` : null,
+    circuitId: trial.circuit_id,
+    source: `Tracé F1DB, CC BY 4.0${altitude}${signsCount > 0 ? ' · Numéros des virages MultiViewer' : ''}`,
+  };
 }
