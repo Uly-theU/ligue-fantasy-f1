@@ -1,7 +1,7 @@
 /** Ce que les deux pages de démo ont en commun : données de la saison, préparation d'un tracé, écrans et réglages. */
 
 import type { ReactNode } from 'react';
-import { Button } from '@/components/ui/button';
+import { Borne, lignesPanneau, type LignePanneau } from '@/components/clm/arcade/habillage';
 import { trackSigns } from '@/lib/circuit-places';
 import { bankTrack } from '@/lib/circuit-banking';
 import { fitRoad, formatLap, metersPerUnit } from '@/lib/clm';
@@ -105,43 +105,37 @@ export function prepare(circuit: Circuit, svg: string | undefined) {
 }
 
 export function Shell({ children }: { children: ReactNode }) {
-  return (
-    <main className="mx-auto min-h-screen max-w-5xl px-4 py-8">
-      {children}
-    </main>
-  );
+  return <main className="clm-demo">{children}</main>;
 }
 
 export function ScreenTitle({ title, back, onBack }: { title: string; back: string; onBack: () => void }) {
   return (
-    <div className="mb-6 flex items-center justify-between gap-3">
-      <h1 className="text-3xl font-bold">{title}</h1>
-      <Button type="button" variant="outline" onClick={onBack}>{back}</Button>
+    <div className="clm-arcade__marquee">
+      <h1 className="clm-arcade__titre">{title}</h1>
+      <button type="button" onClick={onBack}>{back}</button>
     </div>
   );
 }
 
-function Choice({ pressed, onClick, children }: { pressed: boolean; onClick: () => void; children: ReactNode }) {
-  return (
-    <Button type="button" variant={pressed ? 'default' : 'outline'} aria-pressed={pressed} className="w-full" onClick={onClick}>
-      {children}
-    </Button>
-  );
+export function panneauRecord(record: LapRecord | null): LignePanneau[] {
+  if (!record) return lignesPanneau('—', '—', '—');
+  const splits = sectorSplits(record);
+  return lignesPanneau(splits?.[0] ?? '—', formatLap(record.time), formatLap(record.time));
 }
 
 export function Options({ camera, onCamera, back, onBack }: { camera: Camera; onCamera: (next: Camera) => void; back: string; onBack: () => void }) {
   return (
-    <>
-      <ScreenTitle title="Options" back={back} onBack={onBack} />
-      <fieldset className="space-y-3">
-        <legend className="mb-3 text-sm text-muted-foreground">Vue</legend>
-        <Choice pressed={camera === 'chase'} onClick={() => onCamera('chase')}>Poursuite</Choice>
-        <Choice pressed={camera === 'cockpit'} onClick={() => onCamera('cockpit')}>Cockpit</Choice>
+    <Borne surtitre="Réglages" mot="Options" hiScore="—">
+      <fieldset className="clm-arcade__liste-boutons">
+        <legend className="clm-arcade__legend">Vue</legend>
+        <button type="button" aria-pressed={camera === 'chase'} onClick={() => onCamera('chase')}>Poursuite</button>
+        <button type="button" aria-pressed={camera === 'cockpit'} onClick={() => onCamera('cockpit')}>Cockpit</button>
       </fieldset>
-      <p className="mt-6 text-sm text-muted-foreground">
+      <p className="clm-arcade__aide">
         Haut, W ou Z pour accélérer. Flèches ou A et D pour tourner. Espace pour freiner. C change la vue pendant le tour.
       </p>
-    </>
+      <button type="button" onClick={onBack}>{back}</button>
+    </Borne>
   );
 }
 
@@ -154,7 +148,7 @@ export function sectorSplits(record: LapRecord): string[] | null {
 
 export function Credits({ plural }: { plural: boolean }) {
   return (
-    <p className="mt-8 text-center text-[11px] text-white/40">
+    <p className="clm-arcade__aide">
       {plural ? 'Tracés' : 'Tracé'} F1DB, CC BY 4.0 · Altitudes Copernicus DEM via Open-Meteo, CC BY 4.0
     </p>
   );

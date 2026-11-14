@@ -15,6 +15,7 @@ import {
   type EcranArcade,
   type LigneTemps,
 } from './data';
+import { Habillage, lignesPanneau, secteurAffiche } from './habillage';
 
 export type ClmArcadeProps = {
   ecranInitial?: EcranArcade;
@@ -78,7 +79,6 @@ export function ClmArcade({ ecranInitial = 'menu', reducedMotion = false }: ClmA
         />
       ) : (
         <div className="clm-arcade__tube">
-          <Marquee circuit={circuit.nom} />
           {ecran === 'menu' && <Menu onAller={setEcran} />}
           {ecran === 'circuits' && (
             <Circuits
@@ -112,33 +112,39 @@ function Marquee({ circuit }: { circuit: string }) {
 }
 
 function Menu({ onAller }: { onAller: (ecran: EcranArcade) => void }) {
+  const record = RECORDS[0];
   return (
-    <div className="clm-arcade__menu">
-      <div className="clm-arcade__damier">
-        <span className="clm-arcade__credit">1 crédit</span>
+    <Habillage
+      rays
+      objet
+      press
+      surtitre="Ligue"
+      mot="Chrono"
+      detail="Contre-la-montre"
+      stickers={['record', 'nouveau', 'depart', 'saison']}
+      hiScore={record?.temps ?? '0:00.000'}
+      panneau={lignesPanneau(secteurAffiche(record?.secteurs), record?.temps ?? '—', record?.temps ?? '—')}
+    >
+      <div className="clm-arcade__damier" aria-hidden="true" />
+      <div className="clm-arcade__liste-boutons">
+        <button type="button" className="clm-arcade__bouton--principal" onClick={() => onAller('hud')}>
+          Course
+        </button>
+        <button type="button" onClick={() => onAller('circuits')}>
+          Circuits
+        </button>
+        <button type="button" onClick={() => onAller('options')}>
+          Options
+        </button>
+        <button type="button" onClick={() => onAller('records')}>
+          Meilleurs temps
+        </button>
+        <button type="button" onClick={() => onAller('classement')}>
+          Classement
+        </button>
       </div>
-      <div>
-        <h2>Menu</h2>
-        <div className="clm-arcade__liste-boutons">
-          <button type="button" className="clm-arcade__bouton--principal" onClick={() => onAller('hud')}>
-            Course
-          </button>
-          <button type="button" onClick={() => onAller('circuits')}>
-            Circuits
-          </button>
-          <button type="button" onClick={() => onAller('options')}>
-            Options
-          </button>
-          <button type="button" onClick={() => onAller('records')}>
-            Meilleurs temps
-          </button>
-          <button type="button" onClick={() => onAller('classement')}>
-            Classement
-          </button>
-        </div>
-        <p className="clm-arcade__aide">Haut et bas pour choisir. Entrée pour valider.</p>
-      </div>
-    </div>
+      <p className="clm-arcade__aide">Haut et bas pour choisir. Entrée pour valider.</p>
+    </Habillage>
   );
 }
 
@@ -152,8 +158,7 @@ function Circuits({
   onAller: (ecran: EcranArcade) => void;
 }) {
   return (
-    <div>
-      <h2>Choisir un circuit</h2>
+    <Habillage surtitre="Choisir" mot="Grille" detail={CIRCUITS.find((item) => item.id === circuitId)?.nom}>
       <div className="clm-arcade__grille-circuits clm-arcade__liste-boutons">
         {CIRCUITS.map((item) => (
           <button
@@ -178,7 +183,7 @@ function Circuits({
           Retour
         </button>
       </div>
-    </div>
+    </Habillage>
   );
 }
 
@@ -192,8 +197,7 @@ function Options({
   onAller: (ecran: EcranArcade) => void;
 }) {
   return (
-    <div className="clm-arcade__options">
-      <h2>Options</h2>
+    <Habillage surtitre="Réglages" mot="Options">
       <div className="clm-arcade__liste-boutons">
         <button
           type="button"
@@ -217,7 +221,7 @@ function Options({
           Retour
         </button>
       </div>
-    </div>
+    </Habillage>
   );
 }
 
@@ -306,9 +310,16 @@ function Resultats({
   onAller: (ecran: EcranArcade) => void;
 }) {
   return (
-    <div className="clm-arcade__fiche">
-      <h2>Résultats</h2>
-      <p className="clm-arcade__detail">Circuit {nomCircuit}</p>
+    <Habillage
+      rays
+      objet
+      surtitre="Tour"
+      mot="Bouclé"
+      detail={`Circuit ${nomCircuit}`}
+      stickers={['depart', 'saison']}
+      hiScore="1:11.204"
+      panneau={lignesPanneau('22.551', TEMPS_CHRONO, '1:11.204')}
+    >
       <p className="clm-arcade__temps clm-arcade__chiffre">{TEMPS_CHRONO}</p>
       <p className="clm-arcade__ligne-info">
         <span>S1</span>
@@ -341,7 +352,7 @@ function Resultats({
           Menu
         </button>
       </div>
-    </div>
+    </Habillage>
   );
 }
 
@@ -357,9 +368,17 @@ function Tableau({
   onAller: (ecran: EcranArcade) => void;
 }) {
   const ordre = lignesClassees(lignes);
+  const meilleur = ordre.find((ligne) => ligne.temps != null);
+  const temps = meilleur?.temps ?? '—';
   return (
-    <div>
-      <h2>{titre}</h2>
+    <Habillage
+      surtitre={titre}
+      mot="Temps"
+      niveau={2}
+      stickers={meilleur ? ['record'] : []}
+      hiScore={temps}
+      panneau={lignesPanneau(secteurAffiche(meilleur?.secteurs), temps, temps)}
+    >
       <div className="clm-arcade__table-wrap">
         <table className="clm-arcade__table">
           <caption>
@@ -419,6 +438,6 @@ function Tableau({
           Retour
         </button>
       </div>
-    </div>
+    </Habillage>
   );
 }

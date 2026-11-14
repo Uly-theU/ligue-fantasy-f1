@@ -1,5 +1,6 @@
 import './arcade.css';
 import { lignesClassees, type LigneTemps } from './data';
+import { Habillage, lignesPanneau, secteurAffiche } from './habillage';
 
 export type LigneClassementLigue = LigneTemps & {
   id: string;
@@ -17,16 +18,20 @@ export function ClassementLigue({
   onAffronter?: (ligne: LigneClassementLigue) => void;
 }) {
   const ordre = lignesClassees(lignes) as LigneClassementLigue[];
+  const meilleur = ordre.find((ligne) => ligne.temps != null);
+  const temps = meilleur?.temps ?? '—';
 
   return (
     <section className="clm-arcade" aria-label="Classement contre-la-montre">
-      <header className="clm-arcade__marquee">
-        <div>
-          <h2 className="clm-arcade__titre">Classement</h2>
-          <p className="clm-arcade__sous-titre">Contre-la-montre</p>
-        </div>
-        <p className="clm-arcade__sous-titre">{detail}</p>
-      </header>
+      <Habillage
+        surtitre="Classement"
+        mot="Temps"
+        niveau={2}
+        detail={detail}
+        hiScore={temps}
+        stickers={meilleur ? ['record'] : []}
+        panneau={lignesPanneau(secteurAffiche(meilleur?.secteurs), temps, temps)}
+      >
       <div className="clm-arcade__table-wrap">
         <table className="clm-arcade__table">
           <caption>Les membres sans tour figurent en bas, sans temps.</caption>
@@ -77,6 +82,7 @@ export function ClassementLigue({
           </tbody>
         </table>
       </div>
+      </Habillage>
     </section>
   );
 }

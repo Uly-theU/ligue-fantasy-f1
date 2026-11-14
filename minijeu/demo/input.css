@@ -46,6 +46,15 @@
   body {
     @apply bg-background text-foreground antialiased;
     margin: 0;
-    background: #120e30;
+    background: #05060a;
+    overflow-x: clip;
+  }
+
+  .clm-demo {
+    box-sizing: border-box;
+    width: 100%;
+    max-width: 100%;
+    min-height: 100%;
+    overflow-x: clip;
   }
 }
