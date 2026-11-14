@@ -14,15 +14,15 @@ Les menus, le tableau de bord et les records doivent évoquer une borne d'arcade
 
 ## Critères d'acceptation
 
-- [ ] Une proposition visuelle desktop et mobile couvre le menu, la sélection de circuit, le HUD en course et les résultats ; elle sert de référence à l'implémentation.
+- [x] Une proposition visuelle desktop et mobile couvre le menu, la sélection de circuit, le HUD en course et les résultats ; elle sert de référence à l'implémentation.
 - [ ] Menus, options, records et résultats partagent des composants et des styles communs entre les démos et l'application.
-- [ ] Titres bitmap ou anguleux, chiffres monospaces lisibles, palette bleu nuit/noir/blanc avec accents jaune, cyan et rouge, panneaux rectangulaires et damiers constituent une direction cohérente. L'écran titre et les résultats ajoutent le mot extrudé, les autocollants et les rayons de la référence deluxe. Le HUD de course reste plat.
+- [x] Titres bitmap ou anguleux, chiffres monospaces lisibles, palette bleu nuit/noir/blanc avec accents jaune, cyan et rouge, panneaux rectangulaires et damiers constituent une direction cohérente. L'écran titre et les résultats ajoutent le mot extrudé, les autocollants et les rayons de la référence deluxe. Le HUD de course reste plat.
 - [x] Le chrono, la vitesse, les secteurs et l'écart restent lisibles sur la piste en mouvement. Départ, pénalité et nouveau record ont des états visuels distincts.
-- [ ] Le classement de 024 reprend la présentation des meilleurs temps, avec mise en avant du joueur connecté et action « Affronter » de 025 si disponible.
-- [ ] La navigation au clavier et les commandes tactiles existantes restent utilisables ; focus visible et aucun débordement horizontal à 360 px de large.
+- [x] Le classement de 024 reprend la présentation des meilleurs temps, avec mise en avant du joueur connecté et action « Affronter » de 025 si disponible.
+- [x] La navigation au clavier et les commandes tactiles existantes restent utilisables ; focus visible et aucun débordement horizontal à 360 px de large.
 - [x] Les animations respectent `prefers-reduced-motion`. Les éventuels effets CRT sont désactivables et n'altèrent pas le HUD.
 - [x] Les styles sont limités à `.clm-arcade` ; les pages fantasy extérieures au contre-la-montre gardent leur présentation.
-- [ ] Captures des écrans desktop et mobile et résultat des quatre commandes de contrôle joints à la PR.
+- [x] Captures des écrans desktop et mobile et résultat des quatre commandes de contrôle joints à la PR.
 
 ## Notes d'implémentation
 
@@ -37,6 +37,10 @@ Les captures avant et les scénarios de navigation servent de première preuve p
 Le HUD de `time-trial.tsx` et des démos Monaco et saison reprend les classes `.clm-arcade`. Le chrono (`0:00.000`), la vitesse, les secteurs et l'écart sont hors de la piste. Départ, pénalité et record ont des cadres cyan, rouge et jaune. Les chiffres du chrono ne sont pas dans le tube CRT (`animation` et `filter` à `none`). À 360 px, `scrollWidth` vaut 360 et les boutons tactiles ne recouvrent pas la piste. La story reste ouverte : menus partagés, classement « Affronter », parcours clavier complet et gate ne sont pas fermés par cette tranche.
 
 La référence deluxe du 2026-11-13 précise les écrans d'attraction, de résultats et de records. On n'en copie ni les textes, ni les marques, ni les sponsors. Le HUD de course ne reprend pas l'extrusion ni les rayons.
+
+### Tranche deluxe — 2026-11-14
+
+PR #16, commit `87c667a`. Les démos Monaco et saison, l'arrivée et le classement partagent `Habillage`. Les rayons ne sont que sur le titre et les résultats. Le chrono de course garde `filter: none` et `animation: none`. À 360 px, `scrollWidth` vaut 360. L'arrivée réelle n'a pas été conduite : `monaco.html?ecran=arrivee` montre l'écran scripté. Le classement authentifié n'a pas été ouvert. Il reste l'en-tête et le sélecteur de `app/clm/page.tsx`, encore dans le style du site.
 
 ## Hors périmètre
 

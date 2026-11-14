@@ -12,7 +12,7 @@
 
 | Métrique | Valeur |
 |----------|--------|
-| Sessions totales | 21 |
+| Sessions totales | 22 |
 | Date première session | 2026-10-06 |
 | Date dernière session | 2026-11-14 |
 
@@ -41,6 +41,7 @@
 | 19 | 2026-11-14 | story 021 | PR #13 mergée (`314b820`). CI verte. | Monaco 100–127 ms, Spa 138–140 ms. Pas de grille. Les roues du fantôme suivent ses échantillons. Mesure sans GPU. Gate F fermé. | HUD de 026, puis 025 |
 | 20 | 2026-11-14 | story 026, HUD | PR #14 mergée (`5cdeecc`). CI verte. | Chrono jaune lisible à 1280 et à 360. Commandes sous la piste. Menus et records des démos pas encore réhabillés. Story ouverte. | Story 025 |
 | 21 | 2026-11-14 | story 025 | PR #15 mergée (`39894b6`). CI verte. | Affronter rejoue les entrées du membre choisi. L'écart en course se mesure contre ce fantôme. Sans choix, le record personnel reste. Page authentifiée non ouverte. Gate G fermé. Story 026 encore ouverte. | Menus, records et écran titre de 026 |
+| 22 | 2026-11-14 | story 026, écrans | PR #16 mergée (`87c667a`). CI verte. | Démos, arrivée et classement en langage deluxe. Chrono de course plat. L'arrivée n'a pas été conduite. La page `/clm` garde l'en-tête du site. | En-tête et sélecteur de `/clm` |
 
 ## Consommation par phase
 

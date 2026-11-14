@@ -11,7 +11,7 @@
 ## Status
 
 - **Statut global** : On Track
-- **Progression** : portes A et D vues dans le navigateur sur un Postgres local temporaire. Healthcheck `/api/health` en 200. Score d'un GP fictif : 29 points au classement. Le second compte Supabase et le Compose restent ouverts. Contre-la-montre : gates E, F et G fermés. Story 026 encore ouverte (menus, records et écran titre).
+- **Progression** : portes A et D vues dans le navigateur sur un Postgres local temporaire. Healthcheck `/api/health` en 200. Score d'un GP fictif : 29 points au classement. Le second compte Supabase et le Compose restent ouverts. Contre-la-montre : gates E, F et G fermés. Story 026 encore ouverte : les démos sont habillées, la page `/clm` garde l'en-tête du site.
 - **Blockers** : clés Supabase réelles absentes. Docker n'est pas installé, le Compose n'a pas démarré. Le Postgres de cette preuve vit dans `/tmp` et ne survit pas à un redémarrage.
 - **Dernière mise à jour** : `2026-11-14`
 
@@ -96,7 +96,7 @@ Direction de l'interface du mini jeu : arcade des années 80–90, demandée le 
 1. Renseigner l'URL et la clé anon Supabase dans un `.env` lu par Compose, puis `docker compose up -d` sur le VPS.
 2. Créer un second compte (Google ou lien magique) et vérifier la ligne `profiles`.
 3. Ne pas changer le DNS.
-4. Contre-la-montre : gate G fermé. Story 026 encore ouverte : menus, options, records des démos et écrans d'attraction deluxe. Le HUD de course reste plat. Ne pas merger la PR #5. `prisma db push` du modèle `TimeTrialLap` n'a pas été lancé.
+4. Contre-la-montre : habiller l'en-tête et le sélecteur de `/clm` avec le même langage que les démos. Le HUD de course reste plat. Ne pas merger la PR #5. `prisma db push` du modèle `TimeTrialLap` n'a pas été lancé.
 
 ## Journal
 
@@ -128,4 +128,5 @@ Direction de l'interface du mini jeu : arcade des années 80–90, demandée le 
 | 2026-11-14 | Story 021 mergée, PR #13, commit `314b820`. CI https://github.com/Uly-theU/ligue-fantasy-f1/actions/runs/43540455186 verte. Monaco 100–127 ms, Spa 138–140 ms, sans grille. Gate F fermé. |
 | 2026-11-14 | HUD de la story 026 mergé, PR #14, commit `5cdeecc`. CI https://github.com/Uly-theU/ligue-fantasy-f1/actions/runs/43541176917 verte. Chrono lisible à 1280 et 360. Story 026 encore ouverte. |
 | 2026-11-14 | Story 025 mergée, PR #15, commit `39894b6`. CI https://github.com/Uly-theU/ligue-fantasy-f1/actions/runs/43562923439 verte. Affronter rejoue le tour choisi. Sans choix, le fantôme reste le record personnel. Classement authentifié non ouvert. Gate G fermé. |
+| 2026-11-14 | Écrans deluxe mergés, PR #16, commit `87c667a`. CI https://github.com/Uly-theU/ligue-fantasy-f1/actions/runs/43573927467 verte. Menus des démos, arrivée et classement habillés. HUD de course plat. Page `/clm` encore dans le style du site. Story 026 ouverte. |
 | 2026-10-20 | Preuve locale : Postgres temporaire, seed 22 pilotes / 24 GP, parcours navigateur (ligue, draft, équipe, classement 29 pts). Cron scores 200, ingestion 401 sans secret. |
