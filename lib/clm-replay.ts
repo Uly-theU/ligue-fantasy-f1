@@ -1,4 +1,5 @@
 import { CLM_STEP_SECONDS, createCar, crossingFraction, stepClm, type ClmInput } from '@/lib/clm';
+import type { LapSample } from '@/lib/clm-record';
 import type { ElevationSample } from '@/lib/grade';
 import type { Track } from '@/lib/track-path';
 
@@ -30,6 +31,8 @@ export type ReplayLapResult =
       time: number;
       sectors: [number, number, number];
       penalty: number;
+      /** Même forme que le record, lue par `sampleAtTime`. Abscisse croissante. */
+      samples: LapSample[];
     }
   | {
       completed: false;
@@ -70,6 +73,7 @@ export function replayLap(track: Track, inputs: readonly ClmInputSpan[], options
   let car = createCar(track);
   const sectorAt: [number | null, number | null] = [null, null];
   const marks = [track.length / 3, (2 * track.length) / 3];
+  const samples: LapSample[] = [];
 
   for (const span of inputs) {
     const input = clampClmInput(span);
@@ -82,13 +86,16 @@ export function replayLap(track: Track, inputs: readonly ClmInputSpan[], options
       noteSectors(track.length, marks, sectorAt, prevS, prevTime, prevPenalty, car);
       if (car.finished) {
         const time = car.time;
+        samples.push({ t: time, s: track.length, x: car.x, y: car.y, h: car.heading });
         return {
           completed: true,
           time,
           sectors: [sectorAt[0] ?? time, sectorAt[1] ?? time, time],
           penalty: car.penalty,
+          samples,
         };
       }
+      noteReplaySample(samples, car, track.length);
     }
   }
 
@@ -122,6 +129,18 @@ export async function parseLapInputs(raw: string): Promise<ClmInputSpan[] | null
   } catch {
     return null;
   }
+}
+
+/** Un échantillon par pas tant que l'abscisse avance. Le pas final est posé à l'arrivée. */
+function noteReplaySample(
+  samples: LapSample[],
+  car: { time: number; s: number; x: number; y: number; heading: number },
+  length: number,
+): void {
+  if (!(length > 0) || car.s >= length) return;
+  const last = samples[samples.length - 1];
+  if (last && (car.s < last.s || car.time <= last.t)) return;
+  samples.push({ t: car.time, s: car.s, x: car.x, y: car.y, h: car.heading });
 }
 
 function noteSectors(

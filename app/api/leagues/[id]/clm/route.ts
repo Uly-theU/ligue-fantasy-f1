@@ -8,6 +8,7 @@ type Params = { params: { id: string } };
 
 const leagueClmQuerySchema = z.object({
   gameweek: z.string().uuid(),
+  user: z.string().uuid().optional(),
 });
 
 // GET /api/leagues/[id]/clm?gameweek=… — Classement contre-la-montre de la ligue
@@ -16,8 +17,10 @@ export async function GET(req: NextRequest, { params }: Params) {
   if (errorResponse) return errorResponse;
   if (!user) return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
 
+  const rival = req.nextUrl.searchParams.get('user');
   const parsed = leagueClmQuerySchema.safeParse({
     gameweek: req.nextUrl.searchParams.get('gameweek'),
+    ...(rival ? { user: rival } : {}),
   });
   if (!parsed.success) {
     return NextResponse.json({ message: 'Données invalides', errors: parsed.error.errors }, { status: 400 });
@@ -33,7 +36,7 @@ export async function GET(req: NextRequest, { params }: Params) {
 
     const gameweek = await prisma.gameweek.findUnique({
       where: { id: parsed.data.gameweek },
-      select: { id: true, name: true, round_number: true, circuit: true },
+      select: { id: true, name: true, round_number: true, circuit: true, circuit_id: true },
     });
     if (!gameweek) {
       return NextResponse.json({ message: 'Grand Prix introuvable' }, { status: 404 });
@@ -45,6 +48,31 @@ export async function GET(req: NextRequest, { params }: Params) {
         profile: { select: { username: true, display_name: true } },
       },
     });
+
+    if (parsed.data.user) {
+      const target = members.find((entry) => entry.user_id === parsed.data.user);
+      if (!target) {
+        return NextResponse.json({ message: 'Tour introuvable' }, { status: 404 });
+      }
+      const lap = await prisma.timeTrialLap.findUnique({
+        where: {
+          user_id_gameweek_id: { user_id: parsed.data.user, gameweek_id: gameweek.id },
+        },
+        select: { user_id: true, inputs: true, official_time: true, circuit_id: true },
+      });
+      const circuitId = lap?.circuit_id ?? gameweek.circuit_id;
+      if (!lap || lap.inputs.length === 0 || !circuitId) {
+        return NextResponse.json({ message: 'Tour introuvable' }, { status: 404 });
+      }
+      return NextResponse.json({
+        lap: {
+          user_id: lap.user_id,
+          inputs: lap.inputs,
+          official_time: lap.official_time,
+          circuit_id: circuitId,
+        },
+      });
+    }
 
     const laps = members.length === 0
       ? []
@@ -70,7 +98,15 @@ export async function GET(req: NextRequest, { params }: Params) {
       laps,
     );
 
-    return NextResponse.json({ gameweek, ranking });
+    return NextResponse.json({
+      gameweek: {
+        id: gameweek.id,
+        name: gameweek.name,
+        round_number: gameweek.round_number,
+        circuit: gameweek.circuit,
+      },
+      ranking,
+    });
   } catch (error) {
     console.error('GET /api/leagues/[id]/clm:', error);
     return NextResponse.json({ message: 'Erreur interne' }, { status: 500 });

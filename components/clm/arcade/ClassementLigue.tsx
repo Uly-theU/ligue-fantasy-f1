@@ -5,13 +5,16 @@ export type LigneClassementLigue = LigneTemps & {
   id: string;
 };
 
-/** Tableau de ligue : une ligne par joueur, la sienne en jaune. Pas de défi. */
+/** Tableau de ligue : une ligne par joueur, la sienne en jaune. */
 export function ClassementLigue({
   detail,
   lignes,
+  onAffronter,
 }: {
   detail: string;
   lignes: LigneClassementLigue[];
+  /** Rejoue le tour d'un autre membre. Absent : le tableau reste consultatif. */
+  onAffronter?: (ligne: LigneClassementLigue) => void;
 }) {
   const ordre = lignesClassees(lignes) as LigneClassementLigue[];
 
@@ -34,6 +37,7 @@ export function ClassementLigue({
               <th scope="col">Temps</th>
               <th scope="col">Secteurs</th>
               <th scope="col">Écart</th>
+              {onAffronter ? <th scope="col">Défi</th> : null}
             </tr>
           </thead>
           <tbody>
@@ -59,6 +63,15 @@ export function ClassementLigue({
                 <td className="clm-arcade__chiffre" data-label="Écart">
                   {ligne.ecart ?? '—'}
                 </td>
+                {onAffronter ? (
+                  <td data-label="Défi">
+                    {ligne.temps != null && !ligne.courant ? (
+                      <button type="button" className="clm-arcade__affronter" onClick={() => onAffronter(ligne)}>
+                        Affronter
+                      </button>
+                    ) : null}
+                  </td>
+                ) : null}
               </tr>
             ))}
           </tbody>

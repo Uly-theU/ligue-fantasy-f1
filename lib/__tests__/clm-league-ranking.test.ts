@@ -30,6 +30,7 @@ type StoredLap = {
   sectors: number[];
   penalty: number;
   inputs: string;
+  circuit_id: string | null;
   created_at: Date;
 };
 
@@ -38,6 +39,7 @@ type GameweekRow = {
   name: string;
   round_number: number;
   circuit: string | null;
+  circuit_id?: string | null;
 };
 
 type RankingRow = {
@@ -77,6 +79,10 @@ const h = vi.hoisted(() => {
           && (ids == null || ids.includes(lap.user_id))
         ));
       }),
+      findUnique: vi.fn(async ({ where }: { where: { user_id_gameweek_id: { user_id: string; gameweek_id: string } } }) => {
+        const key = where.user_id_gameweek_id;
+        return laps.find((lap) => lap.user_id === key.user_id && lap.gameweek_id === key.gameweek_id) ?? null;
+      }),
     },
   };
   return { members, laps, gameweeks, prisma, getAuthUser };
@@ -95,6 +101,7 @@ describe('GET /api/leagues/[id]/clm', () => {
     h.prisma.leagueMember.findMany.mockClear();
     h.prisma.gameweek.findUnique.mockClear();
     h.prisma.timeTrialLap.findMany.mockClear();
+    h.prisma.timeTrialLap.findUnique.mockClear();
     h.gameweeks.set(GAMEWEEK_ID, {
       id: GAMEWEEK_ID,
       name: 'Grand Prix d’Italie',
@@ -243,6 +250,73 @@ describe('GET /api/leagues/[id]/clm', () => {
     });
     expect(response.json.ranking).toHaveLength(1);
   });
+
+  it('renvoie les entrées du membre choisi sans les mettre dans le classement', async () => {
+    devenirMembre(VIEWER_ID, 'ada');
+    devenirMembre(BOB_ID, 'bob');
+    soumettre({
+      user_id: BOB_ID,
+      official_time: 80,
+      sectors: [20, 30, 30],
+      created_at: new Date('2026-09-06T10:00:00.000Z'),
+      inputs: 'clm1.journal-bob',
+      circuit_id: 'monza',
+    });
+
+    const hidden = await get(GAMEWEEK_ID);
+    expect(JSON.stringify(hidden.json)).not.toContain('clm1.journal-bob');
+    h.prisma.timeTrialLap.findMany.mockClear();
+
+    const rival = await getUser(BOB_ID);
+    expect(rival.status).toBe(200);
+    expect(rival.json.lap).toEqual({
+      user_id: BOB_ID,
+      inputs: 'clm1.journal-bob',
+      official_time: 80,
+      circuit_id: 'monza',
+    });
+    expect(h.prisma.timeTrialLap.findMany).not.toHaveBeenCalled();
+  });
+
+  it('reprend le circuit du Grand Prix quand le tour n’en a pas', async () => {
+    devenirMembre(VIEWER_ID, 'ada');
+    devenirMembre(BOB_ID, 'bob');
+    h.gameweeks.set(GAMEWEEK_ID, {
+      id: GAMEWEEK_ID,
+      name: 'Grand Prix d’Italie',
+      round_number: 16,
+      circuit: 'Monza',
+      circuit_id: 'monza',
+    });
+    soumettre({
+      user_id: BOB_ID,
+      official_time: 80,
+      sectors: [20, 30, 30],
+      created_at: new Date('2026-09-06T10:00:00.000Z'),
+      circuit_id: null,
+    });
+
+    const rival = await getUser(BOB_ID);
+    expect(rival.status).toBe(200);
+    expect(rival.json.lap).toMatchObject({ circuit_id: 'monza', inputs: 'journal-secret' });
+  });
+
+  it('répond 404 si le membre n’a pas de tour, ou s’il n’est pas dans la ligue', async () => {
+    devenirMembre(VIEWER_ID, 'ada');
+    devenirMembre(BOB_ID, 'bob');
+    const missing = await getUser(BOB_ID);
+    expect(missing.status).toBe(404);
+    const outsider = await getUser(CARA_ID);
+    expect(outsider.status).toBe(404);
+    expect(h.prisma.timeTrialLap.findUnique).toHaveBeenCalledTimes(1);
+  });
+
+  it('répond 400 si le joueur demandé n’est pas un identifiant', async () => {
+    devenirMembre(VIEWER_ID, 'ada');
+    const response = await getUser('bob');
+    expect(response.status).toBe(400);
+    expect(h.prisma.leagueMember.findUnique).not.toHaveBeenCalled();
+  });
 });
 
 describe('affichage des temps', () => {
@@ -281,6 +355,7 @@ function soumettre(input: {
   sectors: number[];
   created_at: Date;
   inputs?: string;
+  circuit_id?: string | null;
 }) {
   const next: StoredLap = {
     user_id: input.user_id,
@@ -289,6 +364,7 @@ function soumettre(input: {
     sectors: input.sectors,
     penalty: 0,
     inputs: input.inputs ?? 'journal-secret',
+    circuit_id: input.circuit_id === undefined ? 'monza' : input.circuit_id,
     created_at: input.created_at,
   };
   const index = h.laps.findIndex((lap) => lap.user_id === next.user_id && lap.gameweek_id === next.gameweek_id);
@@ -301,10 +377,23 @@ function soumettre(input: {
 
 async function get(gameweek: string | null) {
   const query = gameweek == null ? '' : `?gameweek=${encodeURIComponent(gameweek)}`;
+  return call(query);
+}
+
+async function getUser(userId: string) {
+  return call(`?gameweek=${encodeURIComponent(GAMEWEEK_ID)}&user=${encodeURIComponent(userId)}`);
+}
+
+async function call(query: string) {
   const response = await GET(
     new NextRequest(`http://localhost/api/leagues/${LEAGUE_ID}/clm${query}`),
     { params: { id: LEAGUE_ID } },
   );
-  const json = await response.json() as { message?: string; gameweek?: GameweekRow; ranking?: RankingRow[] };
+  const json = await response.json() as {
+    message?: string;
+    gameweek?: GameweekRow;
+    ranking?: RankingRow[];
+    lap?: { user_id: string; inputs: string; official_time: number; circuit_id: string };
+  };
   return { status: response.status, json };
 }

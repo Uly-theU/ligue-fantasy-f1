@@ -2,7 +2,7 @@
 
 > **Phase** : Alpha — gate G
 > **Type** : Logic
-> **Statut** : Ready
+> **Statut** : In Progress
 
 ## Contexte
 
@@ -13,9 +13,9 @@ Voir un temps ne dit pas où il a été gagné. Rouler contre le fantôme d'un a
 
 ## Critères d'acceptation
 
-- [ ] Depuis le classement, « Affronter » lance le circuit avec le fantôme du tour choisi, reconstruit en rejouant ses entrées.
-- [ ] L'écart affiché en course se mesure contre ce fantôme.
-- [ ] Sans choix, le comportement actuel est inchangé : fantôme de son propre record.
+- [x] Depuis le classement, « Affronter » lance le circuit avec le fantôme du tour choisi, reconstruit en rejouant ses entrées.
+- [x] L'écart affiché en course se mesure contre ce fantôme.
+- [x] Sans choix, le comportement actuel est inchangé : fantôme de son propre record.
 
 ## Notes d'implémentation
 

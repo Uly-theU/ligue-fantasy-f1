@@ -1,6 +1,10 @@
 import type { ReactElement } from 'react';
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { CLM_STEP_SECONDS, createCar, fitRoad, rampSteer, steerResponse, stepClm, topSpeed } from '@/lib/clm';
+import { createLapInputLog, recordLapInput, serializeLapInputs } from '@/lib/clm-replay';
+import { bankTrack } from '@/lib/circuit-banking';
+import { pointAt, trackFromSvg } from '@/lib/track-path';
 import { ToastProvider } from '@/components/ui/toast';
 import LeaguePage from '@/app/league/[id]/page';
 import ClmPage from './page';
@@ -19,6 +23,16 @@ vi.mock('next/navigation', () => ({
 vi.mock('@/components/providers', () => ({
   useAuth: () => ({ user: { id: ME }, loading: false, supabase: null }),
 }));
+
+vi.mock('@/components/clm/race-view', () => ({
+  RaceView: class {
+    render() {}
+    dispose() {}
+  },
+}));
+
+const ANNEAU = '<svg xmlns="http://www.w3.org/2000/svg"><path stroke-width="48" d="M280 40 A 240 240 0 1 1 279.5 40 Z"/></svg>';
+const LENGTH_KM = 5.793;
 
 const ranking = {
   gameweek: {
@@ -95,8 +109,56 @@ describe('page classement contre-la-montre', () => {
     expect(screen.getByRole('columnheader', { name: 'Temps', hidden: true })).toBeInTheDocument();
     expect(screen.getByRole('columnheader', { name: 'Secteurs', hidden: true })).toBeInTheDocument();
     expect(screen.getByRole('columnheader', { name: 'Écart', hidden: true })).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Affronter' })).not.toBeInTheDocument();
+    const affronter = screen.getAllByRole('button', { name: 'Affronter' });
+    expect(affronter).toHaveLength(1);
+    expect(body[0]).toContainElement(affronter[0]);
+    expect(body[1]).not.toHaveTextContent('Affronter');
+    expect(body[2]).not.toHaveTextContent('Affronter');
+    expect(screen.getByRole('columnheader', { name: 'Défi', hidden: true })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Retour à la ligue' })).toHaveAttribute('href', `/league/${LEAGUE_ID}`);
+  });
+
+  it('lance le circuit avec le fantôme du tour choisi', async () => {
+    vi.stubGlobal('requestAnimationFrame', () => 1);
+    vi.stubGlobal('cancelAnimationFrame', () => {});
+    localStorage.setItem('clm-record:v5:monza', JSON.stringify({
+      time: 99,
+      sectors: [30, 60, 99],
+      samples: [
+        { t: 0, s: 0, x: 0, y: 0, h: 0 },
+        { t: 99, s: 10, x: 1, y: 0, h: 0 },
+      ],
+    }));
+    const inputs = await rivalInputs();
+    vi.mocked(fetch).mockImplementation(async (input) => {
+      const url = String(input);
+      if (url.includes(`user=${BOB_ID}`)) {
+        return jsonResponse({
+          lap: { user_id: BOB_ID, inputs, official_time: 80, circuit_id: 'monza' },
+        });
+      }
+      if (url.startsWith('/api/clm?circuit=monza')) {
+        return jsonResponse({
+          trial: {
+            name: 'Grand Prix d’Italie',
+            circuit_id: 'monza',
+            length_km: LENGTH_KM,
+            svg: ANNEAU,
+            elevation: null,
+            corners: null,
+          },
+        });
+      }
+      return jsonResponse(ranking);
+    });
+    renderPage(<ClmPage />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Affronter' }));
+
+    expect(await screen.findByText(/Grand Prix d’Italie · Bob/)).toBeInTheDocument();
+    const depart = await screen.findByText(/Reste devant le fantôme/);
+    expect(depart).not.toHaveTextContent('1:39.000');
+    expect(screen.getByRole('button', { name: 'Classement' })).toBeInTheDocument();
+    expect(vi.mocked(fetch).mock.calls.some(([url]) => String(url).includes(`user=${BOB_ID}`))).toBe(true);
   });
 
   it('affiche le chargement tant que le classement n’est pas arrivé', async () => {
@@ -162,6 +224,28 @@ describe('hub de ligue', () => {
     expect(lien).toHaveAttribute('href', `/league/${LEAGUE_ID}/clm`);
   });
 });
+
+async function rivalInputs(): Promise<string> {
+  const drawn = trackFromSvg(ANNEAU);
+  if (!drawn) throw new Error('tracé');
+  const track = bankTrack(fitRoad(drawn, LENGTH_KM), 'monza', null);
+  const max = topSpeed(track, LENGTH_KM);
+  let car = createCar(track);
+  let wheel = 0;
+  const log = createLapInputLog();
+  for (let n = 0; n < 120 * 150 && !car.finished; n += 1) {
+    const look = pointAt(track, car.s + track.halfWidth * 4);
+    const aim = Math.atan2(look.y - car.y, look.x - car.x);
+    const diff = Math.atan2(Math.sin(aim - car.heading), Math.cos(aim - car.heading));
+    const wanted = Math.max(-1, Math.min(1, diff / 0.45));
+    wheel = rampSteer(wheel, wanted, CLM_STEP_SECONDS, max > 0 ? car.speed / max : 0);
+    const input = { steer: steerResponse(wheel), brake: 0, throttle: 1 };
+    recordLapInput(log, input);
+    car = stepClm(track, car, input, CLM_STEP_SECONDS, LENGTH_KM);
+  }
+  if (!car.finished) throw new Error('tour non bouclé');
+  return serializeLapInputs(log.spans);
+}
 
 function renderPage(ui: ReactElement) {
   return render(<ToastProvider>{ui}</ToastProvider>);
