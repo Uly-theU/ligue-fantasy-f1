@@ -11,7 +11,7 @@
 ## Status
 
 - **Statut global** : On Track
-- **Progression** : portes A et D vues dans le navigateur sur un Postgres local temporaire. Healthcheck `/api/health` en 200. Score d'un GP fictif : 29 points au classement. Le second compte Supabase et le Compose restent ouverts. Contre-la-montre : stories 019, 020, 022, 023 et 024 intégrées (`7a9333f`). Le classement de ligue trie les tours et laisse les membres sans temps en bas. Gates F et G ouverts.
+- **Progression** : portes A et D vues dans le navigateur sur un Postgres local temporaire. Healthcheck `/api/health` en 200. Score d'un GP fictif : 29 points au classement. Le second compte Supabase et le Compose restent ouverts. Contre-la-montre : gate F fermé (`314b820`). Monaco se construit en 100–127 ms, Spa en 138–140 ms. Les roues du fantôme suivent ses échantillons. Gate G ouvert.
 - **Blockers** : clés Supabase réelles absentes. Docker n'est pas installé, le Compose n'a pas démarré. Le Postgres de cette preuve vit dans `/tmp` et ne survit pas à un redémarrage.
 - **Dernière mise à jour** : `2026-11-13`
 
@@ -56,7 +56,7 @@
 | 018 | Pas de simulation fixe | Logic | E | Done | `design/stories/story-018-pas-fixe.md` |
 | 019 | Découper race-view.ts | Refactor | F | Done | `design/stories/story-019-decoupe-race-view.md` |
 | 020 | Libérer la scène, changer de caméra sans la recréer | Logic | F | Done | `design/stories/story-020-liberer-scene.md` |
-| 021 | Construction de scène mesurée, fantôme correct | Logic | F | Ready | `design/stories/story-021-construction-scene.md` |
+| 021 | Construction de scène mesurée, fantôme correct | Logic | F | Done | `design/stories/story-021-construction-scene.md` |
 | 022 | Enregistrer les entrées du tour | Logic | G | Done | `design/stories/story-022-entrees-du-tour.md` |
 | 023 | Soumission et rejeu côté serveur | Integration | G | Done | `design/stories/story-023-soumission-rejeu-serveur.md` |
 | 024 | Classement de ligue du contre-la-montre | Integration | G | Done | `design/stories/story-024-classement-ligue-clm.md` |
@@ -78,7 +78,7 @@ Direction de l'interface du mini jeu : arcade des années 80–90, demandée le 
 | C Bords fermés | — | Ouvert | 007, 008, 009, 010 |
 | D Hors Vercel | — | Ouvert | Preuve locale. DNS manuel, plus tard |
 | E Chrono honnête | 2026-11-13 | Fermé | Monaco 1:00.644 sans pénalité, Monza 1:12.923 (1,6 s de coupe). Même temps à 60 et 144 Hz. Pilote scripté, pas une main. |
-| F Moteur tenable | — | Ouvert | 019, 020, 021 |
+| F Moteur tenable | 2026-11-14 | Fermé | Monaco 100–127 ms, Spa 138–140 ms, sans GPU. Roues du fantôme sur ses échantillons. |
 | G Classement de ligue du chrono | — | Ouvert | 022 à 025. Dépend de E |
 
 ## Risques projet
@@ -96,7 +96,7 @@ Direction de l'interface du mini jeu : arcade des années 80–90, demandée le 
 1. Renseigner l'URL et la clé anon Supabase dans un `.env` lu par Compose, puis `docker compose up -d` sur le VPS.
 2. Créer un second compte (Google ou lien magique) et vérifier la ligne `profiles`.
 3. Ne pas changer le DNS.
-4. Contre-la-montre : 024 est intégrée. 021 mesure encore la scène. Enchaîner le HUD de 026 dans `time-trial.tsx`. Affronter (025) attend ce HUD. Ne pas merger la PR #5. `prisma db push` du modèle `TimeTrialLap` n'a pas été lancé.
+4. Contre-la-montre : gate F fermé. Le HUD de 026 est en cours dans `time-trial.tsx`. Affronter (025) attend ce HUD. Ne pas merger la PR #5. `prisma db push` du modèle `TimeTrialLap` n'a pas été lancé.
 
 ## Journal
 
@@ -125,4 +125,5 @@ Direction de l'interface du mini jeu : arcade des années 80–90, demandée le 
 | 2026-11-13 | Story 023 mergée, PR #10, commit `5b6dbd2`. CI https://github.com/Uly-theU/ligue-fantasy-f1/actions/runs/43458318260 verte. Rejeu 3 min : 329 ms en local, 1 252 ms sur le runner. Écart trigo 1,5×10⁻¹³ s. Gate G encore ouvert. |
 | 2026-11-13 | Story 020 mergée, PR #11, commit `780549d`. CI https://github.com/Uly-theU/ligue-fantasy-f1/actions/runs/43484426136 verte. Vingt courses : 20 contextes créés et perdus, aucun restauré. Gate F encore ouvert (021). |
 | 2026-11-13 | Story 024 mergée, PR #12, commit `7a9333f`. CI https://github.com/Uly-theU/ligue-fantasy-f1/actions/runs/43484851210 verte. Classement membre, écart au premier. Tableau rempli non vu : pas de base joignable. Gate G encore ouvert (025). |
+| 2026-11-14 | Story 021 mergée, PR #13, commit `314b820`. CI https://github.com/Uly-theU/ligue-fantasy-f1/actions/runs/43540455186 verte. Monaco 100–127 ms, Spa 138–140 ms, sans grille. Gate F fermé. |
 | 2026-10-20 | Preuve locale : Postgres temporaire, seed 22 pilotes / 24 GP, parcours navigateur (ligue, draft, équipe, classement 29 pts). Cron scores 200, ingestion 401 sans secret. |

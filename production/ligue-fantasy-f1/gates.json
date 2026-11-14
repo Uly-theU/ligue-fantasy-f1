@@ -20,8 +20,8 @@
     "comment": "Fermé le 2026-11-13. Stories 015 à 018. Monaco 1:00.644 et Monza 1:12.923, identiques à 60 et 144 Hz. Pilote scripté qui suit le tracé, pas une main."
   },
   "gate-f": {
-    "status": "open",
-    "comment": "Moteur tenable. Stories 019 à 021."
+    "status": "closed",
+    "comment": "Fermé le 2026-11-14. Stories 019 à 021. Construction Monaco 100–127 ms, Spa 138–140 ms, sans GPU ni textures. Roues du fantôme lues sur ses échantillons."
   },
   "gate-g": {
     "status": "open",
